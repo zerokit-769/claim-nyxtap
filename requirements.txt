@@ -1,0 +1,6 @@
+requests
+pillow
+fonttools
+rich
+telethon
+curl-cffi
