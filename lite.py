@@ -1,10 +1,10 @@
-#!/usr/bin/env python3
+#!/usr/init/env python3
 # -*- coding: utf-8 -*-
 """
 LiteBits.io Telegram Mini App Auto Claim Bot (@litebits_faucet_bot)
-- Telethon Auth + Referral A7F2K9
+- Telethon Auth + Referral 78CO20HD
 - Auto-stop 6 jam + Session Report
-- FIXED: Clean Static Refresh (No messy carriage returns)
+- Classic CLI Banner with Dynamic Live Logs & Progress Bar
 """
 
 import time
@@ -26,7 +26,7 @@ if hasattr(sys.stdout, 'reconfigure'):
         pass
 
 
-# ==================== ZEINTHHUB DEVOPS COLORS ====================
+# ==================== COLORS ====================
 class Col:
     R = '\033[0m'
     B = '\033[1m'
@@ -54,44 +54,27 @@ def clear():
     sys.stdout.flush()
 
 
-def get_pad():
-    try:
-        import shutil
-        term_width = shutil.get_terminal_size((60, 20)).columns
-    except:
-        term_width = 60
-    return max(0, (term_width - 51) // 2)
-
-def print_c(colored_text):
-    pad = get_pad()
-    print(" " * pad + colored_text)
-
-
-# ==================== CLEAN ANIMATIONS & ZEINTHHUB BANNER ====================
+# ==================== ANIMATIONS ====================
 class Anim:
     @staticmethod
     def spinner(text, duration=1.5):
-        pad = get_pad()
-        sys.stdout.write(" " * pad + f" {Col.NEON_C}[*]{Col.R} {Col.WHT}{text}...{Col.R}")
+        sys.stdout.write(f" {Col.NEON_C}[*]{Col.R} {Col.WHT}{text}...{Col.R}")
         sys.stdout.flush()
         time.sleep(duration)
-        sys.stdout.write(f"\r" + " " * pad + f" {Col.NEON_G}[✓]{Col.R} {Col.WHT}{text} - Selesai{Col.R}\n")
+        sys.stdout.write(f"\r {Col.NEON_G}[✓]{Col.R} {Col.WHT}{text} - Selesai{Col.R}\n")
         sys.stdout.flush()
 
     @staticmethod
     def progress(text, duration=1.0):
-        pad = get_pad()
-        sys.stdout.write(" " * pad + f" {Col.NEON_C}[>]{Col.R} {Col.WHT}{text}{Col.R}")
+        sys.stdout.write(f" {Col.NEON_C}[>]{Col.R} {Col.WHT}{text}{Col.R}")
         sys.stdout.flush()
         time.sleep(duration)
-        sys.stdout.write(f"\r" + " " * pad + f" {Col.NEON_G}[✓]{Col.R} {Col.WHT}{text}{Col.R}\n")
+        sys.stdout.write(f"\r {Col.NEON_G}[✓]{Col.R} {Col.WHT}{text}{Col.R}\n")
         sys.stdout.flush()
 
     @staticmethod
     def typewriter(text, delay=0.01, color=None):
         c = color or Col.WHT
-        pad = get_pad()
-        sys.stdout.write(" " * pad)
         for ch in text:
             sys.stdout.write(f"{c}{ch}{Col.R}")
             sys.stdout.flush()
@@ -108,70 +91,30 @@ class Anim:
         Anim.progress("Establishing secure channel", 0.5)
         Anim.progress("Verifying signature chain", 0.5)
         print()
-
-        BOX_W = 51
-        INNER_W = BOX_W - 2
-        top_border = f"┏{'━' * INNER_W}┓"
-        mid_border = f"┣{'━' * INNER_W}┫"
-        bot_border = f"┗{'━' * INNER_W}┛"
-        
-        title = "Z E I N T H U B   P R O J E C T".center(INNER_W)
-        subtitle = "LiteBits Auto Claim & Faucet Exploitation".center(INNER_W)
-        
-        print_c(f"{Col.NEON_C}{top_border}{Col.R}")
-        print_c(f"{Col.NEON_C}┃{Col.R}{Col.B}{Col.WHT}{title}{Col.R}{Col.NEON_C}┃{Col.R}")
-        print_c(f"{Col.NEON_C}┃{Col.R}{Col.D}{subtitle}{Col.R}{Col.NEON_C}┃{Col.R}")
-        print_c(f"{Col.NEON_C}{mid_border}{Col.R}")
-        
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
-        lbl_time = "Timestamp".ljust(11)
-        lbl_sys  = "Subsystem".ljust(11)
-        lbl_ref  = "Referral".ljust(11)
-        
-        val_sys = "LiteBits Faucet Bot"
-        val_ref = REFERRAL_CODE
-        
-        s_time = f" ➔ {lbl_time} : {now}"
-        s_sys  = f" ➔ {lbl_sys} : {val_sys}"
-        s_ref  = f" ➔ {lbl_ref} : {val_ref}"
-        
-        pad_t = " " * (INNER_W - len(s_time))
-        pad_s = " " * (INNER_W - len(s_sys))
-        pad_r = " " * (INNER_W - len(s_ref))
-        
-        print_c(f"{Col.NEON_C}┃{Col.R} {Col.D}➔{Col.R} {Col.WHT}{lbl_time}{Col.R} : {Col.NEON_C}{now}{Col.R}{pad_t}{Col.NEON_C}┃{Col.R}")
-        print_c(f"{Col.NEON_C}┃{Col.R} {Col.D}➔{Col.R} {Col.WHT}{lbl_sys}{Col.R} : {Col.NEON_Y}{val_sys}{Col.R}{pad_s}{Col.NEON_C}┃{Col.R}")
-        print_c(f"{Col.NEON_C}┃{Col.R} {Col.D}➔{Col.R} {Col.WHT}{lbl_ref}{Col.R} : {Col.NEON_G}{val_ref}{Col.R}{pad_r}{Col.NEON_C}┃{Col.R}")
-        print_c(f"{Col.NEON_C}{bot_border}{Col.R}")
-        print_c(f"{Col.NEON_C}{'v2.5-stable'.rjust(BOX_W)}{Col.R}")
+        print(render_banner())
         print()
         time.sleep(0.5)
 
 
-# ==================== BANNER (ZEINTHHUB STYLE) ====================
+# ==================== BANNER ====================
 def render_banner():
-    BOX_W = 51
-    INNER_W = BOX_W - 2
-    top_border = f"┏{'━' * INNER_W}┓"
-    mid_border = f"┣{'━' * INNER_W}┫"
-    bot_border = f"┗{'━' * INNER_W}┛"
-    
-    title = "L I T E B I T S   A U T O   C L A I M".center(INNER_W)
-    sub = "@litebits_faucet_bot".center(INNER_W)
-    
-    lines = []
-    lines.append(f"{Col.NEON_C}{top_border}{Col.R}")
-    lines.append(f"{Col.NEON_C}┃{Col.R}{Col.B}{Col.NEON_G}{title}{Col.R}{Col.NEON_C}┃{Col.R}")
-    lines.append(f"{Col.NEON_C}┃{Col.R}{Col.D}{sub}{Col.R}{Col.NEON_C}┃{Col.R}")
-    lines.append(f"{Col.NEON_C}{mid_border}{Col.R}")
-    return "\n".join([" " * get_pad() + l for l in lines])
+    return f"""{Col.NEON_C}=============================================================={Col.R}
+                   ⚡ {Col.NEON_G}LITEBITS{Col.R} ⚡                   
+                     AUTO CLAIM SYSTEM v2.0                   
+{Col.NEON_C}=============================================================={Col.R}
+{Col.NEON_V}ScriptMaker : {Col.WHT}ZeinthHub{Col.R}                             
+{Col.NEON_V}Bot         : {Col.NEON_C}@litebits_faucet_bot{Col.R}                     
+{Col.NEON_V}Referral    : {Col.NEON_Y}{REFERRAL_CODE}{Col.R}                                 
+{Col.NEON_V}Auto-stop   : {Col.NEON_O}{MAX_RUNTIME // 3600} hours{Col.R}                                 
+{Col.NEON_V}Status      : {Col.NEON_G}● ONLINE{Col.R}                             
+{Col.NEON_C}=============================================================={Col.R}"""
 
 
 # ==================== CONFIG ====================
 API_HASH      = 'fb06985ea797ac51aaa1e6d1168ceaaa'
 API_ID        = 35898257
 DEFAULT_BOT   = 'litebits_faucet_bot'
-REFERRAL_CODE = 'A7F2K9'
+REFERRAL_CODE = '78CO20HD'
 CONFIG_FILE   = 'litebits.json'
 BASE_URL      = 'https://mini.litebits.io'
 
@@ -208,24 +151,24 @@ class LiteBitsTeleBot:
         self.base_dir         = os.path.dirname(os.path.abspath(__file__))
         self.start_time       = time.time()
 
-    def _bar(self, remaining, total, width=15):
+    def _bar(self, remaining, total, width=20):
         if total <= 0:
             total = 1
         filled = int((total - remaining) / total * width)
         filled = max(0, min(width, filled))
         empty = width - filled
-        return f"{Col.NEON_G}{'=' * filled}{Col.DIM_C}{' ' * empty}{Col.R}"
+        return f"{Col.NEON_G}{'█' * filled}{Col.DIM_C}{'░' * empty}{Col.R}"
 
     def _progress_wait(self, seconds, label="WAIT"):
         total = seconds
         for left in range(seconds, 0, -1):
             if not self.running:
                 break
-            bar = self._bar(left, total)
+            bar = self._bar(left, total, width=20)
             mm, ss = divmod(left, 60)
             hh, mm = divmod(mm, 60)
-            tstr = f"{hh:02d}:{mm:02d}:{ss:02d}"
-            line = f" {Col.NEON_Y}[⏳ {label}]{Col.R} {Col.WHT}{tstr}{Col.R} [{bar}]"
+            tstr = f"{hh:02d}:{mm:02d}:{ss:02d}" if hh > 0 else f"{mm:02d}:{ss:02d}"
+            line = f" [⏳ {label}] Cooldown {tstr}  [{bar}]"
             self.render_view(live_line=line)
             time.sleep(1)
 
@@ -256,19 +199,17 @@ class LiteBitsTeleBot:
         eh, er = divmod(elapsed, 3600); em, es = divmod(er, 60)
         rh, rr = divmod(remaining, 3600); rm, rs = divmod(rr, 60)
 
-        BOX_W = 51
-        INNER_W = BOX_W - 2
         out = []
-        out.append(f"{Col.NEON_C}┣{'━' * INNER_W}┫{Col.R}")
-        out.append(f"{Col.NEON_C}┃{Col.R} {Col.NEON_V}User{Col.R}      : {Col.NEON_C}{name:<34}{Col.R}{Col.NEON_C}┃{Col.R}")
-        out.append(f"{Col.NEON_C}┃{Col.R} {Col.NEON_V}Balance{Col.R}   : {Col.NEON_Y}{bal_str:<34}{Col.R}{Col.NEON_C}┃{Col.R}")
-        out.append(f"{Col.NEON_C}┃{Col.R} {Col.NEON_V}Earned{Col.R}    : {Col.NEON_G}{earned_str:<34}{Col.R}{Col.NEON_C}┃{Col.R}")
-        out.append(f"{Col.NEON_C}┃{Col.R} {Col.NEON_V}Cycles{Col.R}    : {Col.WHT}{str(self.cycles):<34}{Col.R}{Col.NEON_C}┃{Col.R}")
-        out.append(f"{Col.NEON_C}┃{Col.R} {Col.NEON_V}Success{Col.R}   : {Col.NEON_G if rate >= 90 else Col.NEON_Y}{f'{rate:.1f}%':<34}{Col.R}{Col.NEON_C}┃{Col.R}")
-        out.append(f"{Col.NEON_C}┃{Col.R} {Col.NEON_V}Uptime{Col.R}    : {Col.NEON_C}{f'{eh:02d}:{em:02d}:{es:02d}':<34}{Col.R}{Col.NEON_C}┃{Col.R}")
-        out.append(f"{Col.NEON_C}┃{Col.R} {Col.NEON_V}Remaining{Col.R} : {Col.NEON_O}{f'{rh:02d}:{rm:02d}:{rs:02d}':<34}{Col.R}{Col.NEON_C}┃{Col.R}")
-        out.append(f"{Col.NEON_C}┗" + "━" * INNER_W + f"┛{Col.R}")
-        return "\n".join([" " * get_pad() + l for l in out])
+        out.append(f"{Col.NEON_C}┌─ ACCOUNT ─────────────────────────────────────────────────┐{Col.R}")
+        out.append(f"{Col.NEON_C}│{Col.R} User      : {Col.NEON_C}{name:<45}{Col.NEON_C}│{Col.R}")
+        out.append(f"{Col.NEON_C}│{Col.R} Balance   : {Col.NEON_Y}{bal_str:<45}{Col.NEON_C}│{Col.R}")
+        out.append(f"{Col.NEON_C}│{Col.R} Earned    : {Col.NEON_G}{earned_str:<45}{Col.NEON_C}│{Col.R}")
+        out.append(f"{Col.NEON_C}│{Col.R} Cycles    : {Col.WHT}{str(self.cycles):<45}{Col.NEON_C}│{Col.R}")
+        out.append(f"{Col.NEON_C}│{Col.R} Success   : {Col.NEON_G if rate >= 90 else Col.NEON_Y}{f'{rate:.1f}%':<45}{Col.NEON_C}│{Col.R}")
+        out.append(f"{Col.NEON_C}│{Col.R} Uptime    : {Col.NEON_C}{f'{eh:02d}:{em:02d}:{es:02d}':<45}{Col.NEON_C}│{Col.R}")
+        out.append(f"{Col.NEON_C}│{Col.R} Remaining : {Col.NEON_O}{f'{rh:02d}:{rm:02d}:{rs:02d}':<45}{Col.NEON_C}│{Col.R}")
+        out.append(f"{Col.NEON_C}└────────────────────────────────────────────────────────────┘{Col.R}")
+        return "\n".join(out)
 
     def render_view(self, live_line=None):
         sys.stdout.write("\033[2J\033[H")
@@ -277,46 +218,42 @@ class LiteBitsTeleBot:
         print(render_banner())
         print(self.render_dashboard())
 
-        BOX_W = 51
-        INNER_W = BOX_W - 2
-        log_header = f"┏{'━' * INNER_W}┓"
-        log_title = "L I V E   L O G S".center(INNER_W)
-        print(" " * get_pad() + f"{Col.NEON_C}{log_header}{Col.R}")
-        print(" " * get_pad() + f"{Col.NEON_C}┃{Col.R}{Col.B}{Col.NEON_Y}{log_title}{Col.R}{Col.NEON_C}┃{Col.R}")
-        print(" " * get_pad() + f"{Col.NEON_C}┣{'━' * INNER_W}┫{Col.R}")
+        print(f"\n{Col.NEON_C}========================= LIVE LOGS ==========================={Col.R}\n")
+        for entry in list(self.cycle_logs)[-6:]:
+            print(entry)
         
-        logs_list = list(self.cycle_logs)[-6:]
-        for entry in logs_list:
-            padded = entry.ljust(INNER_W + 10)
-            print(" " * get_pad() + f"{Col.NEON_C}┃{Col.R} {Col.WHT}{padded[:INNER_W]}{Col.R} {Col.NEON_C}┃{Col.R}")
-        
-        for _ in range(max(0, 6 - len(logs_list))):
-            print(" " * get_pad() + f"{Col.NEON_C}┃{Col.R}" + " " * INNER_W + f"{Col.NEON_C}┃{Col.R}")
+        for _ in range(max(0, 6 - len(self.cycle_logs))):
+            print()
 
-        print(" " * get_pad() + f"{Col.NEON_C}┗" + "━" * INNER_W + f"┛{Col.R}")
+        print(f"{Col.NEON_C}=============================================================={Col.R}")
         if live_line:
-            print(" " * get_pad() + live_line)
+            print(f"{Col.WHT}{live_line}{Col.R}")
         else:
-            print(" " * get_pad() + f" {Col.NEON_G}● SYSTEM IDLE / READY{Col.R}")
+            print(f" {Col.NEON_G}● SYSTEM IDLE / READY{Col.R}")
+        
+        elapsed = int(time.time() - self.start_time)
+        eh, er = divmod(elapsed, 3600); em, es = divmod(er, 60)
+        uptime_str = f"{eh:02d}:{em:02d}:{es:02d}"
+        pid = os.getpid()
+        print(f"{Col.NEON_C}========================================================={Col.R}")
+        print(f" STATUS : {Col.NEON_G}● RUNNING{Col.R}    | Uptime: {uptime_str}    | PID: {pid}")
+        print(f"{Col.NEON_C}========================================================={Col.R}")
         sys.stdout.flush()
 
     def add_log(self, level, msg):
         icons = {
-            'ok':    f"{Col.NEON_G}[⚡]{Col.R}",
-            'err':   f"{Col.RED}[✘]{Col.R}",
+            'ok':    f"{Col.NEON_G}[✓]{Col.R}",
+            'err':   f"{Col.RED}[✗]{Col.R}",
             'info':  f"{Col.NEON_C}[*]{Col.R}",
-            'wait':  f"{Col.NEON_Y}[⌛]{Col.R}",
+            'wait':  f"{Col.NEON_Y}[⏳]{Col.R}",
             'warn':  f"{Col.NEON_O}[!]{Col.R}",
             'star':  f"{Col.NEON_P}[★]{Col.R}",
-            'net':   f"{Col.NEON_C}[⇄]{Col.R}",
+            'net':   f"{Col.NEON_C}[🌐]{Col.R}",
         }
         icon = icons.get(level, f"{Col.NEON_C}[·]{Col.R}")
         ts = datetime.now().strftime("%H:%M:%S")
         prefix = f"{Col.DIM_C}[{ts}]{Col.R}"
-        
-        # Format sibuk bergaya terminal operasional tingkat tinggi
-        formatted_log = f"{prefix} {icon} {msg}"
-        self.cycle_logs.append(formatted_log)
+        self.cycle_logs.append(f" {prefix} {icon} {Col.WHT}{msg}{Col.R}")
         self.render_view()
 
     def init_http_session(self):
@@ -443,17 +380,17 @@ class LiteBitsTeleBot:
 
         clear()
         print()
-        Anim.typewriter(f"{Col.NEON_C}LITEBITS SECURE LOGIN v2.5{Col.R}", 0.01)
+        Anim.typewriter(f"{Col.NEON_C}LITEBITS SECURE LOGIN v2.6{Col.R}", 0.01)
         print()
 
         def get_phone():
-            return input(f" {Col.NEON_G}➔{Col.R} Phone Number (+62...): ").strip()
+            return input(f" {Col.NEON_G}➜{Col.R} Phone Number (+62...): ").strip()
 
         def get_code():
-            return input(f" {Col.NEON_G}➔{Col.R} Telegram OTP Code: ").strip()
+            return input(f" {Col.NEON_G}➜{Col.R} Telegram OTP Code: ").strip()
 
         def get_password():
-            return input(f" {Col.NEON_G}➔{Col.R} 2FA Password (jika ada): ").strip()
+            return input(f" {Col.NEON_G}➜{Col.R} 2FA Password (jika ada): ").strip()
 
         await client.start(phone=get_phone, code_callback=get_code, password=get_password)
         init_data = None
@@ -502,17 +439,13 @@ class LiteBitsTeleBot:
             if self.validate_telegram_auth():
                 valid_auth = True
 
-        BOX_W = 51
-        INNER_W = BOX_W - 2
         if valid_auth:
-            print(" " * get_pad() + f"{Col.NEON_C}┏{'━' * INNER_W}┓{Col.R}")
-            print(" " * get_pad() + f"{Col.NEON_C}┃{Col.R}{Col.B}{Col.NEON_Y}{'SELECT MODE'.center(INNER_W)}{Col.R}{Col.NEON_C}┃{Col.R}")
-            print(" " * get_pad() + f"{Col.NEON_C}┣{'━' * INNER_W}┫{Col.R}")
-            print(" " * get_pad() + f"{Col.NEON_C}┃{Col.R}  {Col.NEON_G}[1]{Col.R} {Col.WHT}Start Auto Claim {Col.D}(default){Col.R}     {Col.NEON_C}┃{Col.R}")
-            print(" " * get_pad() + f"{Col.NEON_C}┃{Col.R}  {Col.NEON_C}[2]{Col.R} {Col.WHT}Re-login with Telegram Phone{Col.R}     {Col.NEON_C}┃{Col.R}")
-            print(" " * get_pad() + f"{Col.NEON_C}┃{Col.R}  {Col.NEON_Y}[3]{Col.R} {Col.WHT}Paste init_data manually{Col.R}         {Col.NEON_C}┃{Col.R}")
-            print(" " * get_pad() + f"{Col.NEON_C}┗" + "━" * INNER_W + f"┛{Col.R}")
-            choice = input(f"\n{Col.WHT} ➔ Select option: {Col.NEON_G}").strip()
+            print(f"{Col.NEON_C}========================= SELECT MODE ========================={Col.R}")
+            print(f"  {Col.NEON_G}[1]{Col.R} Start Auto Claim {Col.D}(default){Col.R}")
+            print(f"  {Col.NEON_C}[2]{Col.R} Re-login with Telegram Phone")
+            print(f"  {Col.NEON_Y}[3]{Col.R} Paste init_data manually")
+            print(f"{Col.NEON_C}=============================================================={Col.R}")
+            choice = input(f"\n{Col.WHT} ➜ Select option: {Col.NEON_G}").strip()
             print(Col.R, end='')
         else:
             choice = '2'
@@ -532,37 +465,31 @@ class LiteBitsTeleBot:
         return True
 
     def do_claim_flow(self):
-        pad = get_pad()
-        bal_current = self.user_info.get('balance', '0.00')
-        print("\n" + " " * pad + f" {Col.NEON_P}╭{'━'*51}╮{Col.R}")
-        print(" " * pad + f" {Col.NEON_P}┃{Col.R} {Col.WHT}CLAIM ROUND {Col.NEON_C}{self.cycles+1:02d}{Col.R} {Col.NEON_P}➔{Col.R} {Col.NEON_Y}BAL: {bal_current}{Col.R}{' ' * 24} {Col.NEON_P}┃{Col.R}")
-        print(" " * pad + f" {Col.NEON_P}╰{'━'*51}╯{Col.R}")
-
-        self.add_log('info', f"Executing primary protocol [HOLD {HOLD_DURATION}s]...")
+        self.add_log('info', f"Holding interaction channel ({HOLD_DURATION}s)...")
         self._progress_wait(HOLD_DURATION, label="HOLD")
 
-        self.add_log('info', f"Synchronizing challenge node [PREP {PREPARE_WAIT}s]...")
+        self.add_log('info', f"Preparing secure claim payload ({PREPARE_WAIT}s)...")
         self._progress_wait(PREPARE_WAIT, label="PREP")
 
-        self.add_log('net', "Handshaking secure tunnel to server...")
+        self.add_log('net', "Initializing endpoint request to server...")
         try:
             r_start = self.session.post(f"{BASE_URL}/api/claim/start", json={}, timeout=15)
             start_data = r_start.json()
         except Exception as e:
-            self.add_log('err', f"Network socket exception: {e}")
+            self.add_log('err', f"Network transmission exception: {e}")
             self.cycles_failed += 1
             return False, str(e)
 
         if not start_data.get('success'):
             retry_sec = start_data.get('retryInSeconds')
             if retry_sec:
-                self.add_log('wait', f"Rate limit active. Server cooldown: {retry_sec}s")
+                self.add_log('wait', f"Server rate limit enforced. Cooldown: {retry_sec}s")
                 return True, int(retry_sec)
             self.cycles_failed += 1
             return False, "Failed"
 
         claim_id = start_data.get('claimId')
-        self.add_log('ok', f"Session allocation secured [ID: {str(claim_id)[:8]}]")
+        self.add_log('ok', f"Target session allocated [ID: {str(claim_id)[:8]}]")
 
         ad_token = None
         try:
@@ -574,10 +501,10 @@ class LiteBitsTeleBot:
         except Exception:
             pass
 
-        self.add_log('wait', f"Processing telemetry buffer [AD {AD_VIEW_WAIT}s]...")
+        self.add_log('wait', f"Processing stream simulation buffer ({AD_VIEW_WAIT}s)...")
         self._progress_wait(AD_VIEW_WAIT, label="AD")
 
-        self.add_log('net', "Broadcasting cryptographic verification...")
+        self.add_log('net', "Broadcasting cryptographic confirmation...")
         complete_url = f"{BASE_URL}/api/claim/{claim_id}/complete"
         amount_awarded = 1.0
 
@@ -595,7 +522,7 @@ class LiteBitsTeleBot:
         self.fetch_user_profile()
         self.session_earned += amount_awarded
         self.cycles += 1
-        self.add_log('star', f"Ledger updated: +{amount_awarded:.2f} Coins injected!")
+        self.add_log('star', f"Reward claimed successfully: +{amount_awarded:.2f} Coins")
         self.save_config()
         time.sleep(1)
         return True, "Success"
@@ -605,18 +532,20 @@ class LiteBitsTeleBot:
         if total_sec <= 0:
             total_sec = self.cooldown_seconds
 
+        total = total_sec
         for left in range(total_sec, 0, -1):
             if not self.running:
                 break
             if (time.time() - self.start_time) >= MAX_RUNTIME:
                 self.running = False
                 break
-            t = datetime.now().strftime("%H:%M:%S")
-            pad = get_pad()
-            sys.stdout.write("\r" + " " * pad + f" {Col.DIM_C}[{t}]{Col.R} {Col.NEON_Y}[zZz]{Col.R} Sleeping {left}s before next claim...   ")
-            sys.stdout.flush()
+            bar = self._bar(left, total, width=20)
+            mm, ss = divmod(left, 60)
+            hh, mm = divmod(mm, 60)
+            tstr = f"{hh:02d}:{mm:02d}:{ss:02d}" if hh > 0 else f"{mm:02d}:{ss:02d}"
+            line = f" [⏳ WAIT] Cooldown {tstr}  [{bar}]"
+            self.render_view(live_line=line)
             time.sleep(1)
-        print()
 
     def run(self):
         self.init_http_session()
@@ -641,21 +570,16 @@ class LiteBitsTeleBot:
                     self.live_cooldown(wait_seconds=res)
                     continue
                 if not ok:
-                    self.add_log('warn', "Protocol warning. Re-evaluating in 15s...")
+                    self.add_log('warn', "Operation delayed. Retrying protocol in 15s...")
                     self._progress_wait(15, label="RETRY")
                     continue
-
-                t = datetime.now().strftime("%H:%M:%S")
-                bal_after = self.user_info.get('balance', '0.00')
-                pad = get_pad()
-                print(" " * pad + f" {Col.DIM_C}[{t}]{Col.R} {Col.NEON_G}{Col.B}╰─> SUCCESS: +{self.session_earned:.2f} COINS (balance: {bal_after}) [{self.cycles}]{Col.R}")
 
                 self.live_cooldown()
             except KeyboardInterrupt:
                 self.running = False
                 break
             except Exception as e:
-                self.add_log('err', f"Critical core exception: {e}")
+                self.add_log('err', f"Runtime loop exception: {e}")
                 time.sleep(10)
 
         self.save_config()
