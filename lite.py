@@ -26,24 +26,33 @@ if hasattr(sys.stdout, 'reconfigure'):
         pass
 
 
-# ==================== ZEINTHHUB UI====================
-C_CYAN    = '\033[96m'
-C_GREEN   = '\033[92m'
-C_YELLOW  = '\033[93m'
-C_BLUE    = '\033[94m'
-C_MAGENTA = '\033[95m'
-C_WHITE   = '\033[97m'
-C_DIM     = '\033[90m'
-C_RESET   = '\033[0m'
-C_RED     = '\033[91m'
-C_BOLD    = '\033[1m'
-C_VIOLET  = '\033[38;5;141m'
+# ==================== COLORS ====================
+class Col:
+    R = '\033[0m'
+    B = '\033[1m'
+    D = '\033[2m'
+    RED = '\033[91m'
+    GRN = '\033[92m'
+    YEL = '\033[93m'
+    BLU = '\033[94m'
+    MAG = '\033[95m'
+    CYN = '\033[96m'
+    WHT = '\033[97m'
+    GRY = '\033[90m'
+    NEON_G = '\033[38;5;46m'
+    NEON_C = '\033[38;5;51m'
+    NEON_Y = '\033[38;5;226m'
+    NEON_P = '\033[38;5;207m'
+    NEON_O = '\033[38;5;208m'
+    NEON_V = '\033[38;5;141m'
+    NEON_R = '\033[38;5;196m'
+    DIM_C  = '\033[38;5;244m'
 
-BOX_W = 51
 
 def clear():
     sys.stdout.write("\033[2J\033[H")
     sys.stdout.flush()
+
 
 def get_pad():
     try:
@@ -51,40 +60,40 @@ def get_pad():
         term_width = shutil.get_terminal_size((60, 20)).columns
     except:
         term_width = 60
-    return max(0, (term_width - BOX_W) // 2)
+    return max(0, (term_width - 51) // 2)
 
 def print_c(colored_text):
     pad = get_pad()
     print(" " * pad + colored_text)
 
 
-# ==================== ANIMATIONS ====================
+# ==================== CLEAN ANIMATIONS & ZEINTHHUB BANNER ====================
 class Anim:
     @staticmethod
     def spinner(text, duration=1.5):
         pad = get_pad()
-        sys.stdout.write(" " * pad + f" {C_CYAN}[*]{C_RESET} {C_WHITE}{text}...{C_RESET}")
+        sys.stdout.write(" " * pad + f" {Col.NEON_C}[*]{Col.R} {Col.WHT}{text}...{Col.R}")
         sys.stdout.flush()
         time.sleep(duration)
-        sys.stdout.write(f"\r" + " " * pad + f" {C_GREEN}[✓]{C_RESET} {C_WHITE}{text} - Selesai{C_RESET}\n")
+        sys.stdout.write(f"\r" + " " * pad + f" {Col.NEON_G}[✓]{Col.R} {Col.WHT}{text} - Selesai{Col.R}\n")
         sys.stdout.flush()
 
     @staticmethod
     def progress(text, duration=1.0):
         pad = get_pad()
-        sys.stdout.write(" " * pad + f" {C_CYAN}[>]{C_RESET} {C_WHITE}{text}{C_RESET}")
+        sys.stdout.write(" " * pad + f" {Col.NEON_C}[>]{Col.R} {Col.WHT}{text}{Col.R}")
         sys.stdout.flush()
         time.sleep(duration)
-        sys.stdout.write(f"\r" + " " * pad + f" {C_GREEN}[✓]{C_RESET} {C_WHITE}{text}{C_RESET}\n")
+        sys.stdout.write(f"\r" + " " * pad + f" {Col.NEON_G}[✓]{Col.R} {Col.WHT}{text}{Col.R}\n")
         sys.stdout.flush()
 
     @staticmethod
     def typewriter(text, delay=0.01, color=None):
-        c = color or C_WHITE
+        c = color or Col.WHT
         pad = get_pad()
         sys.stdout.write(" " * pad)
         for ch in text:
-            sys.stdout.write(f"{c}{ch}{C_RESET}")
+            sys.stdout.write(f"{c}{ch}{Col.R}")
             sys.stdout.flush()
             time.sleep(delay)
         print()
@@ -93,13 +102,14 @@ class Anim:
     def opening_sequence():
         clear()
         print()
-        Anim.typewriter(f"{C_CYAN}Initializing boot sequence...", 0.01, C_CYAN)
+        Anim.typewriter(f"{Col.NEON_C}Initializing boot sequence...", 0.01, Col.NEON_C)
         time.sleep(0.2)
         Anim.progress("Loading core modules", 0.5)
         Anim.progress("Establishing secure channel", 0.5)
         Anim.progress("Verifying signature chain", 0.5)
         print()
 
+        BOX_W = 51
         INNER_W = BOX_W - 2
         top_border = f"┏{'━' * INNER_W}┓"
         mid_border = f"┣{'━' * INNER_W}┫"
@@ -108,10 +118,10 @@ class Anim:
         title = "Z E I N T H U B   P R O J E C T".center(INNER_W)
         subtitle = "LiteBits Auto Claim & Faucet Exploitation".center(INNER_W)
         
-        print_c(f"{C_CYAN}{top_border}{C_RESET}")
-        print_c(f"{C_CYAN}┃{C_RESET}{C_BOLD}{C_WHITE}{title}{C_RESET}{C_CYAN}┃{C_RESET}")
-        print_c(f"{C_CYAN}┃{C_RESET}{C_DIM}{subtitle}{C_RESET}{C_CYAN}┃{C_RESET}")
-        print_c(f"{C_CYAN}{mid_border}{C_RESET}")
+        print_c(f"{Col.NEON_C}{top_border}{Col.R}")
+        print_c(f"{Col.NEON_C}┃{Col.R}{Col.B}{Col.WHT}{title}{Col.R}{Col.NEON_C}┃{Col.R}")
+        print_c(f"{Col.NEON_C}┃{Col.R}{Col.D}{subtitle}{Col.R}{Col.NEON_C}┃{Col.R}")
+        print_c(f"{Col.NEON_C}{mid_border}{Col.R}")
         
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
         lbl_time = "Timestamp".ljust(11)
@@ -129,30 +139,31 @@ class Anim:
         pad_s = " " * (INNER_W - len(s_sys))
         pad_r = " " * (INNER_W - len(s_ref))
         
-        print_c(f"{C_CYAN}┃{C_RESET} {C_DIM}➔{C_RESET} {C_WHITE}{lbl_time}{C_RESET} : {C_CYAN}{now}{C_RESET}{pad_t}{C_CYAN}┃{C_RESET}")
-        print_c(f"{C_CYAN}┃{C_RESET} {C_DIM}➔{C_RESET} {C_WHITE}{lbl_sys}{C_RESET} : {C_YELLOW}{val_sys}{C_RESET}{pad_s}{C_CYAN}┃{C_RESET}")
-        print_c(f"{C_CYAN}┃{C_RESET} {C_DIM}➔{C_RESET} {C_WHITE}{lbl_ref}{C_RESET} : {C_GREEN}{val_ref}{C_RESET}{pad_r}{C_CYAN}┃{C_RESET}")
-        print_c(f"{C_CYAN}{bot_border}{C_RESET}")
-        print_c(f"{C_CYAN}{'v2.5-stable'.rjust(BOX_W)}{C_RESET}")
+        print_c(f"{Col.NEON_C}┃{Col.R} {Col.D}➔{Col.R} {Col.WHT}{lbl_time}{Col.R} : {Col.NEON_C}{now}{Col.R}{pad_t}{Col.NEON_C}┃{Col.R}")
+        print_c(f"{Col.NEON_C}┃{Col.R} {Col.D}➔{Col.R} {Col.WHT}{lbl_sys}{Col.R} : {Col.NEON_Y}{val_sys}{Col.R}{pad_s}{Col.NEON_C}┃{Col.R}")
+        print_c(f"{Col.NEON_C}┃{Col.R} {Col.D}➔{Col.R} {Col.WHT}{lbl_ref}{Col.R} : {Col.NEON_G}{val_ref}{Col.R}{pad_r}{Col.NEON_C}┃{Col.R}")
+        print_c(f"{Col.NEON_C}{bot_border}{Col.R}")
+        print_c(f"{Col.NEON_C}{'v2.5-stable'.rjust(BOX_W)}{Col.R}")
         print()
         time.sleep(0.5)
 
 
 # ==================== BANNER ====================
 def render_banner():
+    BOX_W = 51
     INNER_W = BOX_W - 2
     top_border = f"┏{'━' * INNER_W}┓"
     mid_border = f"┣{'━' * INNER_W}┫"
     bot_border = f"┗{'━' * INNER_W}┛"
     
-    title = "L I T E B I T S   A U T O   C L A I M".center(INNER_W)
+    title = "zeinthHub Project Litebis".center(INNER_W)
     sub = "@litebits_faucet_bot".center(INNER_W)
     
     lines = []
-    lines.append(f"{C_CYAN}{top_border}{C_RESET}")
-    lines.append(f"{C_CYAN}┃{C_RESET}{C_BOLD}{C_GREEN}{title}{C_RESET}{C_CYAN}┃{C_RESET}")
-    lines.append(f"{C_CYAN}┃{C_RESET}{C_DIM}{sub}{C_RESET}{C_CYAN}┃{C_RESET}")
-    lines.append(f"{C_CYAN}{mid_border}{C_RESET}")
+    lines.append(f"{Col.NEON_C}{top_border}{Col.R}")
+    lines.append(f"{Col.NEON_C}┃{Col.R}{Col.B}{Col.NEON_G}{title}{Col.R}{Col.NEON_C}┃{Col.R}")
+    lines.append(f"{Col.NEON_C}┃{Col.R}{Col.D}{sub}{Col.R}{Col.NEON_C}┃{Col.R}")
+    lines.append(f"{Col.NEON_C}{mid_border}{Col.R}")
     return "\n".join([" " * get_pad() + l for l in lines])
 
 
@@ -203,7 +214,7 @@ class LiteBitsTeleBot:
         filled = int((total - remaining) / total * width)
         filled = max(0, min(width, filled))
         empty = width - filled
-        return f"{C_GREEN}{'=' * filled}{C_DIM}{' ' * empty}{C_RESET}"
+        return f"{Col.NEON_G}{'=' * filled}{Col.DIM_C}{' ' * empty}{Col.R}"
 
     def _progress_wait(self, seconds, label="WAIT"):
         total = seconds
@@ -214,7 +225,7 @@ class LiteBitsTeleBot:
             mm, ss = divmod(left, 60)
             hh, mm = divmod(mm, 60)
             tstr = f"{hh:02d}:{mm:02d}:{ss:02d}"
-            line = f" {C_YELLOW}[⏳ {label}]{C_RESET} {C_WHITE}{tstr}{C_RESET} [{bar}]"
+            line = f" {Col.NEON_Y}[⏳ {label}]{Col.R} {Col.WHT}{tstr}{Col.R} [{bar}]"
             self.render_view(live_line=line)
             time.sleep(1)
 
@@ -245,17 +256,18 @@ class LiteBitsTeleBot:
         eh, er = divmod(elapsed, 3600); em, es = divmod(er, 60)
         rh, rr = divmod(remaining, 3600); rm, rs = divmod(rr, 60)
 
+        BOX_W = 51
         INNER_W = BOX_W - 2
         out = []
-        out.append(f"{C_CYAN}┣{'━' * INNER_W}┫{C_RESET}")
-        out.append(f"{C_CYAN}┃{C_RESET} {C_VIOLET}User{C_RESET}      : {C_CYAN}{name:<34}{C_RESET}{C_CYAN}┃{C_RESET}")
-        out.append(f"{C_CYAN}┃{C_RESET} {C_VIOLET}Balance{C_RESET}   : {C_YELLOW}{bal_str:<34}{C_RESET}{C_CYAN}┃{C_RESET}")
-        out.append(f"{C_CYAN}┃{C_RESET} {C_VIOLET}Earned{C_RESET}    : {C_GREEN}{earned_str:<34}{C_RESET}{C_CYAN}┃{C_RESET}")
-        out.append(f"{C_CYAN}┃{C_RESET} {C_VIOLET}Cycles{C_RESET}    : {C_WHITE}{str(self.cycles):<34}{C_RESET}{C_CYAN}┃{C_RESET}")
-        out.append(f"{C_CYAN}┃{C_RESET} {C_VIOLET}Success{C_RESET}   : {C_GREEN if rate >= 90 else C_YELLOW}{f'{rate:.1f}%':<34}{C_RESET}{C_CYAN}┃{C_RESET}")
-        out.append(f"{C_CYAN}┃{C_RESET} {C_VIOLET}Uptime{C_RESET}    : {C_CYAN}{f'{eh:02d}:{em:02d}:{es:02d}':<34}{C_RESET}{C_CYAN}┃{C_RESET}")
-        out.append(f"{C_CYAN}┃{C_RESET} {C_VIOLET}Remaining{C_RESET} : {C_RED}{f'{rh:02d}:{rm:02d}:{rs:02d}':<34}{C_RESET}{C_CYAN}┃{C_RESET}")
-        out.append(f"{C_CYAN}┗" + "━" * INNER_W + f"┛{C_RESET}")
+        out.append(f"{Col.NEON_C}┣{'━' * INNER_W}┫{Col.R}")
+        out.append(f"{Col.NEON_C}┃{Col.R} {Col.NEON_V}User{Col.R}      : {Col.NEON_C}{name:<34}{Col.R}{Col.NEON_C}┃{Col.R}")
+        out.append(f"{Col.NEON_C}┃{Col.R} {Col.NEON_V}Balance{Col.R}   : {Col.NEON_Y}{bal_str:<34}{Col.R}{Col.NEON_C}┃{Col.R}")
+        out.append(f"{Col.NEON_C}┃{Col.R} {Col.NEON_V}Earned{Col.R}    : {Col.NEON_G}{earned_str:<34}{Col.R}{Col.NEON_C}┃{Col.R}")
+        out.append(f"{Col.NEON_C}┃{Col.R} {Col.NEON_V}Cycles{Col.R}    : {Col.WHT}{str(self.cycles):<34}{Col.R}{Col.NEON_C}┃{Col.R}")
+        out.append(f"{Col.NEON_C}┃{Col.R} {Col.NEON_V}Success{Col.R}   : {Col.NEON_G if rate >= 90 else Col.NEON_Y}{f'{rate:.1f}%':<34}{Col.R}{Col.NEON_C}┃{Col.R}")
+        out.append(f"{Col.NEON_C}┃{Col.R} {Col.NEON_V}Uptime{Col.R}    : {Col.NEON_C}{f'{eh:02d}:{em:02d}:{es:02d}':<34}{Col.R}{Col.NEON_C}┃{Col.R}")
+        out.append(f"{Col.NEON_C}┃{Col.R} {Col.NEON_V}Remaining{Col.R} : {Col.NEON_O}{f'{rh:02d}:{rm:02d}:{rs:02d}':<34}{Col.R}{Col.NEON_C}┃{Col.R}")
+        out.append(f"{Col.NEON_C}┗" + "━" * INNER_W + f"┛{Col.R}")
         return "\n".join([" " * get_pad() + l for l in out])
 
     def render_view(self, live_line=None):
@@ -265,42 +277,43 @@ class LiteBitsTeleBot:
         print(render_banner())
         print(self.render_dashboard())
 
+        BOX_W = 51
         INNER_W = BOX_W - 2
         log_header = f"┏{'━' * INNER_W}┓"
         log_title = "L I V E   L O G S".center(INNER_W)
-        print(" " * get_pad() + f"{C_CYAN}{log_header}{C_RESET}")
-        print(" " * get_pad() + f"{C_CYAN}┃{C_RESET}{C_BOLD}{C_YELLOW}{log_title}{C_RESET}{C_CYAN}┃{C_RESET}")
-        print(" " * get_pad() + f"{C_CYAN}┣{'━' * INNER_W}┫{C_RESET}")
+        print(" " * get_pad() + f"{Col.NEON_C}{log_header}{Col.R}")
+        print(" " * get_pad() + f"{Col.NEON_C}┃{Col.R}{Col.B}{Col.NEON_Y}{log_title}{Col.R}{Col.NEON_C}┃{Col.R}")
+        print(" " * get_pad() + f"{Col.NEON_C}┣{'━' * INNER_W}┫{Col.R}")
         
         logs_list = list(self.cycle_logs)[-6:]
         for entry in logs_list:
-            padded = entry.ljust(INNER_W + 10) # extra buffer for color codes
-            print(" " * get_pad() + f"{C_CYAN}┃{C_RESET} {C_WHITE}{padded[:INNER_W]}{C_RESET} {C_CYAN}┃{C_RESET}")
+            padded = entry.ljust(INNER_W + 10)
+            print(" " * get_pad() + f"{Col.NEON_C}┃{Col.R} {Col.WHT}{padded[:INNER_W]}{Col.R} {Col.NEON_C}┃{Col.R}")
         
         for _ in range(max(0, 6 - len(logs_list))):
-            print(" " * get_pad() + f"{C_CYAN}┃{C_RESET}" + " " * INNER_W + f"{C_CYAN}┃{C_RESET}")
+            print(" " * get_pad() + f"{Col.NEON_C}┃{Col.R}" + " " * INNER_W + f"{Col.NEON_C}┃{Col.R}")
 
-        print(" " * get_pad() + f"{C_CYAN}┗" + "━" * INNER_W + f"┛{C_RESET}")
+        print(" " * get_pad() + f"{Col.NEON_C}┗" + "━" * INNER_W + f"┛{Col.R}")
         if live_line:
             print(" " * get_pad() + live_line)
         else:
-            print(" " * get_pad() + f" {C_GREEN}● SYSTEM IDLE / READY{C_RESET}")
+            print(" " * get_pad() + f" {Col.NEON_G}● SYSTEM IDLE / READY{Col.R}")
         sys.stdout.flush()
 
     def add_log(self, level, msg):
         icons = {
-            'ok':    f"{C_GREEN}✓{C_RESET}",
-            'err':   f"{C_RED}✗{C_RESET}",
-            'info':  f"{C_CYAN}•{C_RESET}",
-            'wait':  f"{C_YELLOW}⏳{C_RESET}",
-            'warn':  f"{C_RED}!{C_RESET}",
-            'star':  f"{C_MAGENTA}★{C_RESET}",
-            'net':   f"{C_CYAN}🌐{C_RESET}",
+            'ok':    f"{Col.NEON_G}✓{Col.R}",
+            'err':   f"{Col.RED}✗{Col.R}",
+            'info':  f"{Col.NEON_C}•{Col.R}",
+            'wait':  f"{Col.NEON_Y}⏳{Col.R}",
+            'warn':  f"{Col.NEON_O}!{Col.R}",
+            'star':  f"{Col.NEON_P}★{Col.R}",
+            'net':   f"{Col.NEON_C}🌐{Col.R}",
         }
-        icon = icons.get(level, f"{C_CYAN}·{C_RESET}")
+        icon = icons.get(level, f"{Col.NEON_C}·{Col.R}")
         ts = datetime.now().strftime("%H:%M:%S")
-        prefix = f"{C_DIM}[{ts}]{C_RESET}"
-        self.cycle_logs.append(f"{prefix} {icon} {msg}")
+        prefix = f"{Col.DIM_C}[{ts}]{Col.R}"
+        self.cycle_logs.append(f"{prefix} {icon} {Col.WHT}{msg}{Col.R}")
         self.render_view()
 
     def init_http_session(self):
@@ -427,17 +440,17 @@ class LiteBitsTeleBot:
 
         clear()
         print()
-        Anim.typewriter(f"{C_CYAN}LITEBITS SECURE LOGIN v2.5{C_RESET}", 0.01)
+        Anim.typewriter(f"{Col.NEON_C}LITEBITS SECURE LOGIN v2.5{Col.R}", 0.01)
         print()
 
         def get_phone():
-            return input(f" {C_GREEN}➔{C_RESET} Phone Number (+62...): ").strip()
+            return input(f" {Col.NEON_G}➜{Col.R} Phone Number (+62...): ").strip()
 
         def get_code():
-            return input(f" {C_GREEN}➔{C_RESET} Telegram OTP Code: ").strip()
+            return input(f" {Col.NEON_G}➜{Col.R} Telegram OTP Code: ").strip()
 
         def get_password():
-            return input(f" {C_GREEN}➔{C_RESET} 2FA Password (jika ada): ").strip()
+            return input(f" {Col.NEON_G}➜{Col.R} 2FA Password (jika ada): ").strip()
 
         await client.start(phone=get_phone, code_callback=get_code, password=get_password)
         init_data = None
@@ -486,17 +499,18 @@ class LiteBitsTeleBot:
             if self.validate_telegram_auth():
                 valid_auth = True
 
+        BOX_W = 51
         INNER_W = BOX_W - 2
         if valid_auth:
-            print(" " * get_pad() + f"{C_CYAN}┏{'━' * INNER_W}┓{C_RESET}")
-            print(" " * get_pad() + f"{C_CYAN}┃{C_RESET}{C_BOLD}{C_YELLOW}{'SELECT MODE'.center(INNER_W)}{C_RESET}{C_CYAN}┃{C_RESET}")
-            print(" " * get_pad() + f"{C_CYAN}┣{'━' * INNER_W}┫{C_RESET}")
-            print(" " * get_pad() + f"{C_CYAN}┃{C_RESET}  {C_GREEN}[1]{C_RESET} {C_WHITE}Start Auto Claim {C_DIM}(default){C_RESET}     {C_CYAN}┃{C_RESET}")
-            print(" " * get_pad() + f"{C_CYAN}┃{C_RESET}  {C_CYAN}[2]{C_RESET} {C_WHITE}Re-login with Telegram Phone{C_RESET}     {C_CYAN}┃{C_RESET}")
-            print(" " * get_pad() + f"{C_CYAN}┃{C_RESET}  {C_YELLOW}[3]{C_RESET} {C_WHITE}Paste init_data manually{C_RESET}         {C_CYAN}┃{C_RESET}")
-            print(" " * get_pad() + f"{C_CYAN}┗" + "━" * INNER_W + f"┛{C_RESET}")
-            choice = input(f"\n{C_WHITE} ➔ Select option: {C_GREEN}").strip()
-            print(C_RESET, end='')
+            print(" " * get_pad() + f"{Col.NEON_C}┏{'━' * INNER_W}┓{Col.R}")
+            print(" " * get_pad() + f"{Col.NEON_C}┃{Col.R}{Col.B}{Col.NEON_Y}{'SELECT MODE'.center(INNER_W)}{Col.R}{Col.NEON_C}┃{Col.R}")
+            print(" " * get_pad() + f"{Col.NEON_C}┣{'━' * INNER_W}┫{Col.R}")
+            print(" " * get_pad() + f"{Col.NEON_C}┃{Col.R}  {Col.NEON_G}[1]{Col.R} {Col.WHT}Start Auto Claim {Col.D}(default){Col.R}     {Col.NEON_C}┃{Col.R}")
+            print(" " * get_pad() + f"{Col.NEON_C}┃{Col.R}  {Col.NEON_C}[2]{Col.R} {Col.WHT}Re-login with Telegram Phone{Col.R}     {Col.NEON_C}┃{Col.R}")
+            print(" " * get_pad() + f"{Col.NEON_C}┃{Col.R}  {Col.NEON_Y}[3]{Col.R} {Col.WHT}Paste init_data manually{Col.R}         {Col.NEON_C}┃{Col.R}")
+            print(" " * get_pad() + f"{Col.NEON_C}┗" + "━" * INNER_W + f"┛{Col.R}")
+            choice = input(f"\n{Col.WHT} ➜ Select option: {Col.NEON_G}").strip()
+            print(Col.R, end='')
         else:
             choice = '2'
 
@@ -505,8 +519,8 @@ class LiteBitsTeleBot:
                 return False
             self.validate_telegram_auth()
         elif choice == '3':
-            user_in = input(f"{C_WHITE}Init Data / Token: {C_GREEN}").strip()
-            print(C_RESET, end='')
+            user_in = input(f"{Col.WHT}Init Data / Token: {Col.NEON_G}").strip()
+            print(Col.R, end='')
             if user_in:
                 if 'tgWebAppData=' in user_in:
                     user_in = urllib.parse.unquote(user_in.split('tgWebAppData=')[1].split('&')[0])
@@ -591,7 +605,7 @@ class LiteBitsTeleBot:
             hh, mm = divmod(mm, 60)
             tstr = f"{hh:02d}:{mm:02d}:{ss:02d}"
             bar = self._bar(total_sec, total)
-            line = f" {C_YELLOW}[⏳ WAIT]{C_RESET} Cooldown {C_WHITE}{tstr}{C_RESET}  [{bar}]"
+            line = f" {Col.NEON_Y}[⏳ WAIT]{Col.R} Cooldown {Col.WHT}{tstr}{Col.R}  [{bar}]"
             self.render_view(live_line=line)
             time.sleep(1)
             total_sec -= 1
@@ -632,7 +646,7 @@ class LiteBitsTeleBot:
                 time.sleep(10)
 
         self.save_config()
-        print(f"\n{C_GREEN}Sesi Selesai. Total Earned: {self.session_earned:.2f} Coins{C_RESET}")
+        print(f"\n{Col.NEON_G}Sesi Selesai. Total Earned: {self.session_earned:.2f} Coins{Col.R}")
 
 
 if __name__ == '__main__':
