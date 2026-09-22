@@ -37,6 +37,5 @@ pkg update && pkg upgrade -y
 pkg install python git libjpeg-turbo freetype -y
 git clone https://github.com/zerokit-769/claim-nyxtap.git
 cd claim-nyxtap
-python -m pip install --upgrade pip
-pip install requests pillow fonttools
-python nyxtap_claim.py
+pip install -r requirements.txt
+run python nyxtap_claim.py/atau pakai file yang lain nya yg berakhiran .py
