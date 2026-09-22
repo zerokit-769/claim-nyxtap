@@ -156,7 +156,7 @@ def render_banner():
     mid_border = f"┣{'━' * INNER_W}┫"
     bot_border = f"┗{'━' * INNER_W}┛"
     
-    title = "zeinthHub Project Litebis".center(INNER_W)
+    title = "Z E I N T H H U B  P R O J E C T".center(INNER_W)
     sub = "@litebits_faucet_bot".center(INNER_W)
     
     lines = []
@@ -171,7 +171,7 @@ def render_banner():
 API_HASH      = 'fb06985ea797ac51aaa1e6d1168ceaaa'
 API_ID        = 35898257
 DEFAULT_BOT   = 'litebits_faucet_bot'
-REFERRAL_CODE = 'A7F2K9'
+REFERRAL_CODE = '78CO20HD'
 CONFIG_FILE   = 'litebits.json'
 BASE_URL      = 'https://mini.litebits.io'
 
@@ -313,7 +313,10 @@ class LiteBitsTeleBot:
         icon = icons.get(level, f"{Col.NEON_C}·{Col.R}")
         ts = datetime.now().strftime("%H:%M:%S")
         prefix = f"{Col.DIM_C}[{ts}]{Col.R}"
-        self.cycle_logs.append(f"{prefix} {icon} {Col.WHT}{msg}{Col.R}")
+        
+        # Format log mengalir ke bawah dengan struktur persis seperti yang diinginkan
+        formatted_log = f"{prefix} │  {icon} {msg}"
+        self.cycle_logs.append(formatted_log)
         self.render_view()
 
     def init_http_session(self):
@@ -529,6 +532,13 @@ class LiteBitsTeleBot:
         return True
 
     def do_claim_flow(self):
+        # Kotak Claim Round Bergaya Profesional
+        pad = get_pad()
+        bal_current = self.user_info.get('balance', '0.00')
+        print("\n" + " " * pad + f" {Col.NEON_P}╭{'━'*51}╮{Col.R}")
+        print(" " * pad + f" {Col.NEON_P}┃{Col.R} {Col.WHT}CLAIM ROUND {Col.NEON_C}{self.cycles+1:02d}{Col.R} {Col.NEON_P}➔{Col.R} {Col.NEON_Y}BAL: {bal_current}{Col.R}{' ' * 24} {Col.NEON_P}┃{Col.R}")
+        print(" " * pad + f" {Col.NEON_P}╰{'━'*51}╯{Col.R}")
+
         self.add_log('info', f"Holding button ({HOLD_DURATION}s)...")
         self._progress_wait(HOLD_DURATION, label="HOLD")
 
@@ -596,19 +606,18 @@ class LiteBitsTeleBot:
         if total_sec <= 0:
             total_sec = self.cooldown_seconds
 
-        total = total_sec
-        while total_sec > 0 and self.running:
+        for left in range(total_sec, 0, -1):
+            if not self.running:
+                break
             if (time.time() - self.start_time) >= MAX_RUNTIME:
                 self.running = False
                 break
-            mm, ss = divmod(total_sec, 60)
-            hh, mm = divmod(mm, 60)
-            tstr = f"{hh:02d}:{mm:02d}:{ss:02d}"
-            bar = self._bar(total_sec, total)
-            line = f" {Col.NEON_Y}[⏳ WAIT]{Col.R} Cooldown {Col.WHT}{tstr}{Col.R}  [{bar}]"
-            self.render_view(live_line=line)
+            t = datetime.now().strftime("%H:%M:%S")
+            pad = get_pad()
+            sys.stdout.write("\r" + " " * pad + f" {Col.DIM_C}[{t}]{Col.R} {Col.NEON_Y}[zZz]{Col.R} Sleeping {left}s before next claim...   ")
+            sys.stdout.flush()
             time.sleep(1)
-            total_sec -= 1
+        print()
 
     def run(self):
         self.init_http_session()
@@ -636,6 +645,11 @@ class LiteBitsTeleBot:
                     self.add_log('warn', "Retrying in 15s...")
                     self._progress_wait(15, label="RETRY")
                     continue
+
+                t = datetime.now().strftime("%H:%M:%S")
+                bal_after = self.user_info.get('balance', '0.00')
+                pad = get_pad()
+                print(" " * pad + f" {Col.DIM_C}[{t}]{Col.R} {Col.NEON_G}{Col.B}╰─> SUCCESS: +{self.session_earned:.2f} COINS (balance: {bal_after}) [{self.cycles}]{Col.R}")
 
                 self.live_cooldown()
             except KeyboardInterrupt:
