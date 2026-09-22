@@ -314,7 +314,7 @@ class LiteBitsTeleBot:
         ts = datetime.now().strftime("%H:%M:%S")
         prefix = f"{Col.DIM_C}[{ts}]{Col.R}"
         
-        # Format log mengalir ke bawah dengan struktur persis seperti yang diinginkan
+    
         formatted_log = f"{prefix} │  {icon} {msg}"
         self.cycle_logs.append(formatted_log)
         self.render_view()
