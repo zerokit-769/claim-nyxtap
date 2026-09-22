@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-ARUBLE AUTO FAUCET CLAIM — Python port with ZeinthHub DevOps UI style.
+ARUBLE AUTO FAUCET CLAIM — Python port with ZeinthHub Project.
 """
 
 import json
@@ -463,7 +463,7 @@ def show_devops_ui():
     mid_border = f"┣{'━' * INNER_W}┫"
     bot_border = f"┗{'━' * INNER_W}┛"
     
-    title = "Z E I N TH H U B   P R O J E C T".center(INNER_W)
+    title = "Z E I N T H H U B   P R O J E C T".center(INNER_W)
     subtitle = "Automated Faucet Exploitation & Glyph Recognition".center(INNER_W)
     
     print_c(f"{C_CYAN}{top_border}{C_RESET}")
