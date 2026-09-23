@@ -38,4 +38,4 @@ pkg install python git libjpeg-turbo freetype -y
 git clone https://github.com/zerokit-769/claim-nyxtap.git
 cd claim-nyxtap
 pip install -r requirements.txt
-run python nyxtap_claim.py/atau pakai file yang lain nya yg berakhiran .py
+run: python nyxtap_claim.py/atau pakai file yang lain nya yg berakhiran .py
