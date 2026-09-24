@@ -12,7 +12,7 @@ import urllib.parse
 import requests
 from datetime import datetime, timezone
 
-# ========== WARNA ==========
+
 class Col:
     R    = '\033[0m'
     WHT  = '\033[97m'
@@ -41,7 +41,7 @@ BIRU = Col.BLU
 CYAN = Col.CYA
 PUTIH = Col.WHT
 
-# ========== KONFIGURASI ==========
+
 BASE_URL = "https://btc.tonrevenue.space"
 GIGA_URL = "https://ad.gigapub.tech/v1/ad"
 GIGA_PROJ = "5736"
