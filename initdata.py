@@ -6,7 +6,7 @@ import asyncio
 from telethon import TelegramClient, functions, types
 from telethon.errors import RPCError
 
-# ==================== KONFIGURASI API ====================
+
 API_ID = 35898257
 API_HASH = 'fb06985ea797ac51aaa1e6d1168ceaaa'
 COMMON_SHORT_NAMES = ['app', 'play', 'start', 'game', 'farm', 'mine', 'tap', 'coin', 'bot']
