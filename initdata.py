@@ -11,7 +11,7 @@ API_ID = 35898257
 API_HASH = 'fb06985ea797ac51aaa1e6d1168ceaaa'
 COMMON_SHORT_NAMES = ['app', 'play', 'start', 'game', 'farm', 'mine', 'tap', 'coin', 'bot']
 
-# ==================== WARNA & UI ====================
+
 class Col:
     R = '\033[0m'
     B = '\033[1m'
