@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 import os
 import sys
@@ -9,7 +11,6 @@ import re
 import urllib.parse
 import requests
 from datetime import datetime, timezone
-
 
 class Col:
     R    = '\033[0m'
@@ -39,13 +40,11 @@ BIRU = Col.BLU
 CYAN = Col.CYA
 PUTIH = Col.WHT
 
-
 BASE_URL = "https://btc.tonrevenue.space"
 GIGA_URL = "https://ad.gigapub.tech/v1/ad"
 GIGA_PROJ = "5736"
 GIGA_TOKEN = "CEEUHXgZVL184wyaDp6laEchjHQ7RNN3"
 CONFIG_FILE = "btcton_config.json"
-
 DEFAULT_UA = "Mozilla/5.0 (Linux; Android 16; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.7977.87 Mobile Safari/537.36 Telegram-Android/12.9.2 (Samsung SM-A556E; Android 16; SDK 36; HIGH)"
 
 init_data = ""
@@ -118,7 +117,6 @@ BANNER = f"""
 ║                                                        ║
 ╚════════════════════════════════════════════════════════╝{Col.R}
 """
-
 
 # ========== UTILITY ==========
 def clear():
@@ -207,20 +205,37 @@ def gen_fingerprint(seed=None):
 def get_init_data():
     global init_data
     config = load_config()
+    
+    # Mode Cupu (1x Input)
     if config.get('initData'):
-        return config['initData']
+        init_data = config['initData']
+        parsed = parse_init_data(init_data)
+        ok, msg = validate_init_data(parsed)
+        if ok:
+            print(f" {Col.NEON_G}[✓]{Col.R} {Col.WHT}Auto-Login dengan Sesi Tersimpan ({msg}){Col.R}")
+            return init_data
+        else:
+            print(f" {Col.NEON_Y}[!]{Col.R} {Col.WHT}Sesi lama tersimpan namun expired. Perlu update.{Col.R}")
+
     print(f" {Col.NEON_C}[➜]{Col.R} {Col.WHT}Masukkan initData: {Col.NEON_G}", end="")
-    init_data = input().strip()
+    user_input = input().strip()
     print(Col.R, end="")
-    if init_data:
+    if user_input:
+        init_data = user_input
         config['initData'] = init_data
         save_config(config)
         print(f" {Col.NEON_G}[✓]{Col.R} {Col.WHT}Data tersimpan di {Col.DIM_C}{CONFIG_FILE}{Col.R}")
         return init_data
     return None
 
-def refresh_initdata():
+def refresh_initdata(force=False):
     global init_data
+    
+    # Jika tidak dipaksa oleh user, abaikan permintaan refresh dari server
+    if not force:
+        print(f" {Col.DIM_C}[~] Mengabaikan permintaan refresh dari server, menggunakan initData lama...{Col.R}")
+        return True 
+
     print(f" {Col.NEON_C}[➜]{Col.R} {Col.WHT}Input initData baru: {Col.NEON_G}", end="")
     new = input().strip()
     print(Col.R, end="")
@@ -309,8 +324,9 @@ def api(path, extra=None):
             payload.update(extra)
         r = http_json(BASE_URL + path, payload, tg_headers())
         if attempt == 0 and is_init_error(r):
-            if refresh_initdata():
-                continue
+            # Coba ulang sekali tanpa meminta input ulang
+            time.sleep(2)
+            continue
         return r
     return r
 
@@ -340,8 +356,9 @@ def get_init():
             if 'balance' in r and 'balance' not in r['user']:
                 r['user']['balance'] = r['balance']
         if attempt == 0 and is_init_error(r):
-            if refresh_initdata():
-                continue
+            # Coba ulang sekali tanpa meminta input ulang
+            time.sleep(2)
+            continue
         return r
     return r
 
@@ -493,11 +510,9 @@ def main():
 
     parsed = parse_init_data(init_data)
     ok, msg = validate_init_data(parsed)
-    if ok:
-        print(f" {Col.NEON_G}[✓]{Col.R} {Col.WHT}Koneksi Valid ({msg}){Col.R}")
-    else:
-        if not refresh_initdata():
-            sys.exit(1)
+    if not ok:
+        print(f" {Col.NEON_Y}[!]{Col.R} {Col.WHT}Peringatan: {msg}{Col.R}")
+        # Tetap izinkan masuk ke menu meskipun ada peringatan expired
 
     print()
     Anim.progress("Establishing Session", 1.5)
@@ -510,7 +525,6 @@ def main():
         ensure_captcha()
         ib = get_init()
         tasks = get_state()
-        
         
         user_name = parsed['user'].get('username', '?')
         bal_str = "Failed to fetch"
@@ -530,7 +544,6 @@ def main():
             else:
                 status_str = f"{Col.NEON_G}SECURED{Col.R}"
 
-        
         print(f" {Col.DIM_C}┌─[ {Col.NEON_C}ACCOUNT DASHBOARD{Col.DIM_C} ]─────────────────────────────────{Col.R}")
         print(f" {Col.DIM_C}│{Col.R} {Col.WHT}Account User : {Col.NEON_C}@{user_name}{Col.R}")
         print(f" {Col.DIM_C}│{Col.R} {Col.WHT}Balance      : {Col.NEON_G}{bal_str}{Col.R}")
@@ -551,7 +564,6 @@ def main():
         print(f" {Col.DIM_C}└────────────────────────────────────────────────────────{Col.R}")
         print()
 
-        
         print(f"{Col.NEON_C}┌────────────────────────────────────────────────────────┐{Col.R}")
         print(f"{Col.NEON_C}│                 {Col.B}{Col.NEON_G}TONREVENUE MAIN MENU{Col.R}{Col.NEON_C}                   │{Col.R}")
         print(f"{Col.NEON_C}├────────────────────────────────────────────────────────┤{Col.R}")
@@ -573,7 +585,7 @@ def main():
             clear() 
         elif opt == '2':
             print()
-            refresh_initdata()
+            refresh_initdata(force=True)
             parsed = parse_init_data(init_data) 
             input(f"\n {Col.DIM_C}Tekan [ENTER] untuk kembali ke menu utama...{Col.R}")
             clear()
