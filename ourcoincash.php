@@ -16,10 +16,11 @@ const MAX_PTC_RETRY = 3;
 
 const DEF_UA = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36";
 
+// Definisi warna terminal
 const RST = "\033[0m"; const BOLD = "\033[1m";
 const RED = "\033[1;31m"; const GRN = "\033[1;32m";
 const YEL = "\033[1;33m"; const CYN = "\033[1;36m";
-const WHT = "\033[1;37m";
+const WHT = "\033[1;37m"; const GRY = "\033[1;90m";
 
 function is_tty(): bool {
     return function_exists('posix_isatty') && @posix_isatty(STDIN) && @posix_isatty(STDOUT);
@@ -44,16 +45,23 @@ function clip(string $s): string {
     return is_tty() ? $s : preg_replace('/\033\[[0-9;]*m/', '', $s);
 }
 
+// FORMAT LOGG BARU (Mengikuti style screenshot)
 function logg(string $type, string $text): void {
     $t = date('H:i:s');
-    $tag = $col = '';
     switch ($type) {
-        case 's': $tag = 'SUCCESS'; $col = GRN; break;
-        case 'e': $tag = 'ERROR';   $col = RED; break;
-        case 'w': $tag = 'WARN';    $col = YEL; break;
-        default:  $tag = 'INFO';    $col = CYN; break;
+        case 's': // SUCCESS
+            echo clip(GRY . "[$t] " . GRN . "└─> SUCCESS: " . $text . RST . "\n");
+            break;
+        case 'e': // ERROR
+            echo clip(GRY . "[$t] " . WHT . "│    " . RED . "ERROR: " . WHT . $text . RST . "\n");
+            break;
+        case 'w': // WARN
+            echo clip(GRY . "[$t] " . WHT . "│    " . YEL . "WARN: " . WHT . $text . RST . "\n");
+            break;
+        default:  // INFO
+            echo clip(GRY . "[$t] " . WHT . "│    " . $text . RST . "\n");
+            break;
     }
-    echo clip("{$col}[{$t}] - {$col}[{$tag}] " . RST . WHT . "$text" . RST . "\n");
     flush();
 }
 
@@ -104,7 +112,7 @@ function curl_req(string $url, array $headers = [], $post = 0): string {
 function solve_adslab(string $label = "[CAPTCHA]") {
     global $CFG;
     $apiKey = trim($CFG['apikey'] ?? '');
-    if (!$apiKey) { logg('e', "[SOLVER] API key kosong"); return null; }
+    if (!$apiKey) { logg('e', "API key solver kosong"); return null; }
 
     $payload = json_encode([
         'apikey'  => $apiKey,
@@ -129,14 +137,16 @@ function solve_adslab(string $label = "[CAPTCHA]") {
     $task = json_decode($raw, true);
 
     if (!is_array($task)) {
-        logg('e', "[SOLVER] Respon bukan JSON: " . substr((string)$raw, 0, 200));
+        logg('e', "Solver respon bukan JSON");
         return null;
     }
     $id = trim((string)($task['request'] ?? ''));
     if (!$id) {
-        logg('e', "[SOLVER] Gagal submit: " . substr(json_encode($task), 0, 200));
+        logg('e', "Gagal submit solver");
         return null;
     }
+    
+    logg('i', "challenge: gate started (hold=1000ms)");
     $start = time();
     $poll_no = 0;
     $spinner = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
@@ -154,8 +164,9 @@ function solve_adslab(string $label = "[CAPTCHA]") {
             while (microtime(true) < $anim_until) {
                 $sp = ($sp + 1) % count($spinner);
                 $el = time() - $start;
-                printf("\r\033[K%s %s solving %02d:%02d task#%s poll#%d %d/180s",
-                    $spinner[$sp], $label, intdiv($el, 60), $el % 60, $id, $poll_no, $el);
+                $t = date('H:i:s');
+                printf("\r\033[K%s[%s] %s│    %s %s solving %02d:%02d",
+                    GRY, $t, WHT, $spinner[$sp], $label, intdiv($el, 60), $el % 60);
                 flush();
                 usleep(100000);
             }
@@ -177,18 +188,19 @@ function solve_adslab(string $label = "[CAPTCHA]") {
         if ($req === '') continue;
         if (strpos($req, 'ERROR_') === 0) {
             if ($tty) echo "\r\033[K";
-            logg('e', "[SOLVER] Poll error: $req");
+            logg('e', "Poll error: $req");
             return null;
         }
         if ($tty) echo "\r\033[K";
+        logg('i', "gate passed (captcha verified)");
         return $req;
     }
     if ($tty) echo "\r\033[K";
-    logg('e', "[SOLVER] Timeout polling task $id");
+    logg('e', "Timeout polling task $id");
     return null;
 }
 
-// ── ANTIBOT (auto-detect: kalau gaada ablinks, skip & tetep jalan) ──
+// ── ANTIBOT (auto-detect) ──
 function parse_ablinks(string $html): array {
     $start = strpos($html, 'var ablinks=');
     if ($start === false) $start = strpos($html, 'var ablinks =');
@@ -315,34 +327,35 @@ function map_antibot_result(string $token, array $ablinks): ?array {
 
 function solve_antibot(string $html): ?string {
     $ablinks = parse_ablinks($html);
-    if (empty($ablinks)) return null;  // auto-detect: gaada → skip
+    if (empty($ablinks)) return null; 
     $mainB64 = extract_main_ablink($html);
     if (!$mainB64) return null;
     $tty = is_tty();
 
     $s = antibot_submit($mainB64, $ablinks);
     if (!$s['ok']) {
-        logg('e', "[ANTIBOT] submit gagal: " . ($s['msg'] ?? '?'));
+        logg('e', "Antibot submit gagal");
         return null;
     }
-
+    
+    logg('i', "bot-check started: solving antibot links...");
     $start = time();
     $spinner = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
     $sp = 0;
-    $poll_no = 0;
+    
     while (true) {
-        $poll_no++;
         if ($tty) {
             $el = time() - $start;
-            printf("\r\033[K%s [ANTIBOT] %d links | solving %02d:%02d task#%s poll#%d",
-                $spinner[$sp % count($spinner)], count($ablinks), intdiv($el, 60), $el % 60, $s['id'], $poll_no);
+            $t = date('H:i:s');
+            printf("\r\033[K%s[%s] %s│    %s [ANTIBOT] solving %02d:%02d",
+                GRY, $t, WHT, $spinner[$sp % count($spinner)], intdiv($el, 60), $el % 60);
             flush();
             $sp++;
         }
         $r = antibot_poll($s['id']);
         if ($r['status'] !== 'ready') {
             if ($tty) { echo "\r\033[K"; }
-            logg('e', "[ANTIBOT] poll gagal: " . ($r['msg'] ?? '?'));
+            logg('e', "Antibot poll gagal: " . ($r['msg'] ?? '?'));
             return null;
         }
         break;
@@ -350,10 +363,11 @@ function solve_antibot(string $html): ?string {
     $mapped = map_antibot_result($r['token'], $ablinks);
     if (!$mapped) {
         if ($tty) echo "\r\033[K";
-        logg('e', "[ANTIBOT] map hasil gagal");
+        logg('e', "Antibot map hasil gagal");
         return null;
     }
     if ($tty) echo "\r\033[K";
+    logg('i', "bot-check passed");
     return implode(' ', $mapped);
 }
 
@@ -369,13 +383,6 @@ function is_claim_success(string $body): ?string {
         return trim(strip_tags($m[1]));
     }
     return null;
-}
-
-function x(string $a, string $b, string $s, int $n = 1): string {
-    $parts = explode($a, $s);
-    if (!isset($parts[$n])) return '';
-    $out = explode($b, $parts[$n])[0];
-    return trim($out);
 }
 
 function parse_csrf(string $html): string {
@@ -438,7 +445,7 @@ function is_ptc_success(string $resp): ?string {
         if (preg_match('/text:\s*\'([^\']+)\'/i', $resp, $m)) return trim($m[1]);
         if (preg_match('/<p[^>]*class="text-success"[^>]*>(.*?)<\/p>/is', $resp, $m)) return trim(strip_tags($m[1]));
         if (preg_match('/<div[^>]*class="alert\s+alert-success[^"]*"[^>]*>(.*?)<\/div>/is', $resp, $m)) return trim(strip_tags($m[1]));
-        return 'PTC Claim success';
+        return '+ PTC Claim success';
     }
     return null;
 }
@@ -465,16 +472,18 @@ function parse_ptc_ads(string $html): array {
     return $ads;
 }
 
-function timer(int $seconds, string $label = "Countdown"): void {
+// FORMAT TIMER BARU
+function timer(int $seconds, string $label = "Sleeping"): void {
     $a = time() + $seconds;
     while (true) {
         $b = $a - time();
         if ($b < 1) break;
-        echo "\r$label " . sprintf('%02d:%02d', intdiv($b, 60), $b % 60) . "   ";
+        $t = date('H:i:s');
+        echo "\r\033[K" . GRY . "[$t] " . YEL . "[zZz] " . GRY . "$label {$b}s before next claim...     " . RST;
         flush();
         sleep(1);
     }
-    echo "\r" . str_repeat(' ', 50) . "\r";
+    echo "\r\033[K";
 }
 
 function b() {
@@ -485,16 +494,16 @@ function b() {
 function do_login(): int {
     global $CFG;
     $email = $CFG['email'];
-    logg('i', "Starting Login: " . mask_email($email));
+    logg('i', "session init, checking tokens...");
 
     $r = curl_req(HOST . '/login');
-    if ($r === '') { logg('e', "[LOGIN] Response kosong"); return 0; }
+    if ($r === '') { logg('e', "Response kosong"); return 0; }
     $csrf = parse_csrf($r);
-    if (!$csrf) { logg('e', "[LOGIN] CSRF tidak ketemu, len=" . strlen($r)); return 0; }
-    logg('i', "CSRF OK, minta token solver...");
+    if (!$csrf) { logg('e', "CSRF tidak ketemu"); return 0; }
+    logg('i', "login ok (http 200)");
 
     $tok = solve_adslab("[LOGIN]");
-    if (!$tok) { logg('e', "[LOGIN] Token kosong"); return 0; }
+    if (!$tok) { logg('e', "Token kosong"); return 0; }
 
     $resp = curl_req(HOST . '/auth/login', [
         'Content-Type: application/x-www-form-urlencoded',
@@ -509,10 +518,10 @@ function do_login(): int {
     ]);
 
     if (is_logged_in($resp)) {
-        logg('s', "Login Completed!");
+        logg('i', "re-authenticated (login + bot-check)");
         return 1;
     }
-    logg('e', "[LOGIN] Gagal, len=" . strlen($resp));
+    logg('e', "Login gagal, silakan cek akun");
     return 0;
 }
 
@@ -523,21 +532,19 @@ function ensure_login(): bool {
 }
 
 function run_faucet() {
-    $old_bal = null;
     while (true) {
         $r = curl_req(HOST . '/faucet');
-        if (!is_logged_in($r)) { logg('e', "[FAUCET] Session expired"); return -1; }
+        if (!is_logged_in($r)) { logg('e', "Session expired"); return -1; }
 
         $info = parse_faucet_status($r);
         if ($info['status'] !== 'UNKNOWN') {
-            logg('i', "[FAUCET] status: {$info['status']} | reward: {$info['reward']} | claims left: {$info['claims_left']}");
+            logg('i', "target {$info['claims_left']} claim(s) (remaining today)");
         }
 
         if ($info['status'] !== 'READY') {
             $cd = get_cooldown_minutes($r);
             if ($cd > 0) {
-                logg('w', "Cooldown " . sprintf('%02d:%02d', intdiv($cd, 60), $cd % 60));
-                timer($cd, "Waiting");
+                timer($cd, "Sleeping");
                 continue;
             }
             sleep(5);
@@ -583,30 +590,31 @@ function run_faucet() {
             $new_bal = b();
             $diff = null;
             if ($new_bal !== null) $diff = $new_bal - $before_bal;
-            logg('s', "$claimMsg | balance: " .
-                ($new_bal !== null ? number_format($new_bal, 2) . " coins" : "?"));
-            timer(CLAIM_DELAY, "Jeda");
+            
+            // Format output sukses menyesuaikan screenshot
+            logg('s', "$claimMsg (balance: " . ($new_bal !== null ? number_format($new_bal, 2) : "?") . ")");
+            
             $cd = get_cooldown_minutes($v);
             if ($cd > 0) {
-                logg('w', "Cooldown " . sprintf('%02d:%02d', intdiv($cd, 60), $cd % 60));
-                timer($cd, "Waiting");
+                timer($cd, "Sleeping");
+            } else {
+                timer(CLAIM_DELAY, "Sleeping");
             }
             continue;
         }
         if ($claimMsg !== null && stripos($v, 'alert-danger') !== false) {
-            logg('e', "[FAUCET] server: $claimMsg");
+            logg('e', "Server: $claimMsg");
         }
         if (is_logged_in($v)) {
-            logg('e', "[FAUCET] session hilang setelah verify");
+            logg('e', "Session hilang setelah verify");
             return -1;
         }
 
         $cd2 = get_cooldown_minutes($v);
         if ($cd2 > 0) {
-            logg('w', "Cooldown " . sprintf('%02d:%02d', intdiv($cd2, 60), $cd2 % 60));
-            timer($cd2, "Waiting");
+            timer($cd2, "Sleeping");
         } else {
-            logg('w', "[FAUCET] verify gagal, retry 5s");
+            logg('w', "Verify gagal, retry 5s");
             sleep(5);
         }
     }
@@ -618,9 +626,9 @@ function claim_one_ad(array $ad, float $current_balance): array {
     if (looks_like_login_page($view)) return [null, $current_balance];
     $csrf  = parse_csrf($view);
     $token = parse_token($view);
-    if (!$csrf || !$token) { logg('w', "[PTC] csrf/token gak ada di view #$id"); return [false, $current_balance]; }
+    if (!$csrf || !$token) { logg('w', "csrf/token gak ada di view PTC #$id"); return [false, $current_balance]; }
 
-    if ($dur > 0) timer($dur, "[PTC] View");
+    if ($dur > 0) timer($dur, "Viewing Ad");
 
     $cap = solve_adslab("[PTC]");
     if (!$cap) return [false, $current_balance];
@@ -641,8 +649,7 @@ function claim_one_ad(array $ad, float $current_balance): array {
     if ($ptcMsg !== null) {
         $new_bal = b();
         if ($new_bal !== null) $current_balance = $new_bal;
-        logg('s', "$ptcMsg | balance: " .
-            ($new_bal !== null ? number_format($new_bal, 2) . " coins" : "?"));
+        logg('s', "$ptcMsg (balance: " . ($new_bal !== null ? number_format($new_bal, 2) : "?") . ")");
         return [true, $current_balance];
     }
     return [false, $current_balance];
@@ -653,22 +660,20 @@ function run_ptc() {
     $current_balance = null;
     for ($pass = 1; $pass <= MAX_PTC_PASS; $pass++) {
         $r = curl_req(HOST . '/ptc');
-        if (!is_logged_in($r)) { logg('e', "[PTC] Session expired"); return -1; }
+        if (!is_logged_in($r)) { logg('e', "Session expired"); return -1; }
 
         $all = parse_ptc_ads($r);
         $pending = array_filter($all, function ($a) use ($claimed) {
             return !in_array($a['id'], $claimed);
         });
 
-        if ($pass === 1) logg('i', "[PTC] Ditemukan " . count($all) . " iklan");
-        if (!$pending) { logg('s', "[PTC] Semua iklan sudah ke-claim!"); break; }
-        if ($pass > 1) logg('w', "[PTC] Pass #$pass: " . count($pending) . " iklan belum ke-claim");
+        if ($pass === 1) logg('i', "Ditemukan " . count($all) . " iklan PTC");
+        if (!$pending) { logg('i', "Semua iklan sudah ke-claim!"); break; }
 
         foreach ($pending as $ad) {
-            logg('i', "[PTC] Ad #{$ad['id']} | {$ad['reward']}c | {$ad['duration']}s");
+            logg('i', "Ad #{$ad['id']} | {$ad['reward']}c | {$ad['duration']}s");
             $ok = false;
             for ($t = 1; $t <= MAX_PTC_RETRY; $t++) {
-                if ($t > 1) logg('w', "[PTC] Ad #{$ad['id']} retry $t/" . MAX_PTC_RETRY);
                 [$success, $current_balance] = claim_one_ad($ad, $current_balance ?? 0.0);
                 if ($success === null) return -1;
                 if ($success) {
@@ -676,7 +681,7 @@ function run_ptc() {
                 }
                 sleep(2);
             }
-            if (!$ok) logg('e', "[PTC] Ad #{$ad['id']} gagal " . MAX_PTC_RETRY . "x");
+            if (!$ok) logg('e', "Ad #{$ad['id']} gagal " . MAX_PTC_RETRY . "x");
         }
     }
     return 0;
@@ -686,17 +691,17 @@ function load_config(): array {
     if (!file_exists(CONFIG_FILE)) {
         clear_screen();
         banner_main();
-        echo WHT . "  Config Setup — OurCoinCash" . RST . "\n";
-        echo WHT . "  ─────────────────────────────" . RST . "\n";
-        echo WHT . "  API Key (Waryono) : " . RST;
+        echo WHT . "  Config Setup \n";
+        echo "  ─────────────────────────────\n";
+        echo "  API Key (Waryono) : ";
         $apikey = prompt('');
-        echo WHT . "  Email             : " . RST;
+        echo "  Email             : ";
         $email = prompt('');
-        echo WHT . "  Password          : " . RST;
+        echo "  Password          : ";
         $password = prompt('');
         $cfg = ['apikey' => $apikey, 'email' => $email, 'password' => $password];
         file_put_contents(CONFIG_FILE, json_encode($cfg, JSON_PRETTY_PRINT));
-        logg('s', "Config tersimpan: " . CONFIG_FILE);
+        logg('s', "Config tersimpan");
         sleep(1);
         return $cfg;
     }
@@ -719,34 +724,30 @@ function clear_screen(): void {
 }
 
 function banner_main(): void {
-    echo WHT . "═══════════════════════════════════════════════" . RST . "\n";
-    echo YEL . "       BOT OURCOINCASH.XYZ" . RST . "\n";
-    echo CYN . "       Credit by t.me/Hello_world092" . RST . "\n";
-    echo WHT . "═══════════════════════════════════════════════" . RST . "\n";
-}
-
-function banner_account(string $email): void {
-    echo WHT . "═══════════════════════════════════════════════" . RST . "\n";
-    echo WHT . "Akun : " . CYN . mask_email($email) . RST . "\n";
-    echo WHT . "───────────────────────────────────────────────" . RST . "\n";
+    echo "\n";
+    echo WHT . "  ╔════════════════════════════════════════════╗" . RST . "\n";
+    echo CYN . "  ║             ZEINTHHUB PROJECT              ║" . RST . "\n";
+    echo WHT . "  ║          Automated Miner & Claimer         ║" . RST . "\n";
+    echo WHT . "  ╚════════════════════════════════════════════╝" . RST . "\n";
+    echo "\n";
+    echo WHT . "  [+] Captcha Provider -> Gate & Icon Solver\n";
+    echo WHT . "  [+] Payload          -> Automated Miner & Claimer\n";
+    echo "\n";
+    echo GRN . "  >> SYSTEM READY. Handing over to main process...\n\n" . RST;
 }
 
 function run_faucet_loop(): void {
     global $CFG;
-    clear_screen(); banner_main();
-    echo WHT . "Akun : " . CYN . mask_email($CFG['email']) . RST . "\n";
-    echo WHT . "Mode : " . CYN . "Auto (PTC → Faucet)" . RST . "\n";
-    echo WHT . "───────────────────────────────────────────────" . RST . "\n";
     while (true) {
         if (!ensure_login()) { sleep(3); continue; }
         $bal = b();
-        if ($bal !== null) logg('i', "Balance: " . number_format($bal, 2) . " coins");
+        if ($bal !== null) logg('i', "balance check: " . number_format($bal, 2) . " coins");
 
         $ptc = run_ptc();
-        if ($ptc == -1) { logg('w', "[PTC] session expired, re-login..."); sleep(2); continue; }
+        if ($ptc == -1) { logg('w', "session expired, re-login..."); sleep(2); continue; }
 
         $r = run_faucet();
-        if ($r == -1) { logg('w', "[FAUCET] session expired, re-login..."); sleep(2); continue; }
+        if ($r == -1) { logg('w', "session expired, re-login..."); sleep(2); continue; }
         sleep(1);
     }
 }
@@ -755,14 +756,13 @@ function main(): void {
     global $CFG;
     tty_ok_or_die();
     $CFG = load_config();
-    clear_screen(); banner_main();
-    echo WHT . "Akun : " . CYN . mask_email($CFG['email'] ?? '') . RST . "\n";
+    clear_screen(); 
+    banner_main();
+    
     if (!ensure_login()) {
         logg('e', "Login gagal");
         return;
     }
-    $bal = b();
-    if ($bal !== null) logg('i', "Balance: " . number_format($bal, 2) . " coins");
     run_faucet_loop();
 }
 
