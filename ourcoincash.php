@@ -537,7 +537,7 @@ function clear_screen(): void {
 function banner_main(): void {
     echo WHT . "═══════════════════════════════════════════════" . RST . "\n";
     echo YEL . "       BOT OURCOINCASH.XYZ" . RST . "\n";
-    echo CYN . "       Credit by t.me/Hello_world092" . RST . "\n";
+    echo CYN . "         ZEINTHHUB PROJECT" . RST . "\n";
     echo WHT . "═══════════════════════════════════════════════" . RST . "\n";
 }
 
